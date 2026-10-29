@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pour Mon Amour ❤️ - Joyeux Anniversaire</title>
+  
+  <!-- Fontes Google : 'Playfair Display' pour un style romantique/manuscrit et 'Inter' pour la lisibilité -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       1. RÉINITIALISATION ET DÉFINITIONS GLOBALE (BOX MODEL EXPLAINED)
+       ========================================================================== */
+    
+    /* 
+      LE MODÈLE DE BOÎTE (BOX MODEL) :
+      Chaque élément HTML est considéré comme une boîte rectangulaire composée de :
+      - Content : Le contenu réel (texte, image).
+      - Padding : L'espace interne entre le contenu et la bordure.
+      - Border : La bordure entourant le padding et le contenu.
+      - Margin : L'espace externe séparant cet élément des autres éléments voisins.
+      
+      'box-sizing: border-box' garantit que la largeur (width) et la hauteur (height)
+      incluent le Padding et la Border, ce qui évite que les éléments ne débordent de manière inattendue !
+    */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* Variables CSS pour maintenir une palette de couleurs élégante et constante */
+      --primary-rose: #f43f5e;
+      --soft-rose: #ffe4e6;
+      --bg-gradient: linear-gradient(135deg, #fff5f5 0%, #fff0f3 50%, #f3e8ff 100%);
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --card-bg: #ffffff;
+      --shadow-soft: 0 10px 25px -5px rgba(244, 63, 94, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      --shadow-hover: 0 20px 30px -10px rgba(244, 63, 94, 0.25);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-dark);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-bottom: 60px;
+    }
+
+    /* ==========================================================================
+       2. EN-TÊTE ET BARRE DE NAVIGATION (FLEXBOX)
+       ========================================================================== */
+    
+    /* 
+      FLEXBOX (Flexible Box Layout) :
+      Utilisé pour aligner des éléments sur un axe unique (ligne ou colonne).
+      - 'display: flex' transforme le conteneur en conteneur flexible.
+      - 'justify-content: space-between' pousse les éléments aux extrémités gauche/droite.
+      - 'align-items: center' aligne verticalement au centre.
+    */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px); /* Effet verre dépoli moderne */
+      border-bottom: 1px solid var(--soft-rose);
+      padding: 12px 24px; /* Padding haut/bas 12px, gauche/droite 24px */
+    }
+
+    .header-container {
+      max-width: 1100px;
+      margin: 0 auto; /* Centrage horizontal de la boîte globale */
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .heart-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%; /* Rend le rectangle parfaitement rond */
+      background: var(--primary-rose);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .title-group h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      color: var(--text-dark);
+    }
+
+    .title-group p {
+      font-size: 0.75rem;
+      color: var(--primary-rose);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Widget Lecteur Musique */
+    .music-widget {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      padding: 6px 16px;
+      border-radius: 30px;
+      border: 1px solid var(--soft-rose);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .music-btn {
+      background: var(--primary-rose);
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+
+    .music-btn:hover {
+      transform: scale(1.1);
+    }
+
+    /* ==========================================================================
+       3. SECTION HERO & COMPTEUR TEMPS (GRID LAYOUT)
+       ========================================================================== */
+    .hero {
+      text-align: center;
+      padding: 40px 20px 20px 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(244, 63, 94, 0.1);
+      color: var(--primary-rose);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .hero h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      color: var(--text-dark);
+    }
+
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    /* 
+      CSS GRID LAYOUT :
+      Idéal pour les grilles bidimensionnelles (lignes et colonnes).
+      'grid-template-columns: repeat(auto-fit, minmax(100px, 1rem))' crée une grille
+      automatiquement réactive selon la largeur de l'écran !
+    */
+    .counter-card {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(244, 63, 94, 0.15);
+      margin-bottom: 40px;
+    }
+
+    .counter-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary-rose);
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .counter-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+
+    .counter-item {
+      background: var(--bg-gradient);
+      padding: 12px 6px;
+      border-radius: 12px;
+      border: 1px solid var(--soft-rose);
+    }
+
+    .counter-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      display: block;
+    }
+
+    .counter-unit {
+      font-size: 0.7rem;
+      color: var(--primary-rose);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    /* Responsive mobile : passe à 3 colonnes sur petits écrans */
+    @media (max-width: 640px) {
+      .counter-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .hero h2 { font-size: 1.8rem; }
+    }
+
+    /* ==========================================================================
+       4. SYSTÈME D'ONGLETS (NAVIGATION INTERNE)
+       ========================================================================== */
+    .tab-navigation {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .tab-btn {
+      padding: 12px 24px;
+      border-radius: 30px;
+      border: 1px solid var(--soft-rose);
+      background: white;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .tab-btn.active {
+      background: var(--primary-rose);
+      color: white;
+      border-color: var(--primary-rose);
+      box-shadow: 0 6px 16px rgba(244, 63, 94, 0.3);
+    }
+
+    .tab-content {
+      display: none;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       5. CONCEPT 1 : MUSÉE DE NOUS - CARTES POLAROID 3D (FLIP EFFECT)
+       ========================================================================== */
+    
+    .polaroid-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 30px;
+    }
+
+    /* 
+      EFFET DE RETOURNEMENT 3D (3D CARD FLIP EXPLAINED) :
+      1. 'perspective: 1000px' sur le conteneur parent donne une sensation de profondeur 3D.
+      2. 'transform-style: preserve-3d' sur la carte interne préserve cet espace 3D pour ses enfants.
+      3. 'backface-visibility: hidden' cache la face arrière quand la carte pivote.
+      4. 'rotateY(180deg)' effectue le retournement de la face arrière.
+    */
+    .polaroid-container {
+      perspective: 1000px;
+      height: 420px;
+    }
+
+    .polaroid-card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
+    }
+
+    .polaroid-container.flipped .polaroid-card {
+      transform: rotateY(180deg);
+    }
+
+    /* Faces Recto & Verso */
+    .polaroid-front, .polaroid-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 16px;
+      padding: 16px;
+      background: white;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Recto (Photo) */
+    .polaroid-image-wrapper {
+      width: 100%;
+      height: 280px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #f1f5f9;
+    }
+
+    .polaroid-image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .polaroid-card:hover .polaroid-image-wrapper img {
+      transform: scale(1.05);
+    }
+
+    .polaroid-caption {
+      text-align: center;
+      padding-top: 10px;
+    }
+
+    .polaroid-caption h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--text-dark);
+    }
+
+    .polaroid-caption p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Verso (Note manuscrite) */
+    .polaroid-back {
+      transform: rotateY(180deg);
+      background: #fefcbf; /* Style papier post-it / note rétro */
+      background-image: radial-gradient(#e2e8f0 1px, transparent 0);
+      background-size: 16px 16px;
+      color: #334155;
+      border: 1px solid #fef08a;
+    }
+
+    .polaroid-note {
+      font-family: 'Caveat', cursive;
+      font-size: 1.4rem;
+      line-height: 1.4;
+      margin-top: 15px;
+      color: #1e293b;
+    }
+
+    .polaroid-song-badge {
+      background: rgba(255, 255, 255, 0.8);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-rose);
+      font-weight: 600;
+    }
+
+    /* ==========================================================================
+       6. CONCEPT 2 : LETTRES "OUVRE QUAND..." (ENVELOPPES)
+       ========================================================================== */
+    .letters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .envelope-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--soft-rose);
+      box-shadow: var(--shadow-soft);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 200px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .envelope-card::before {
+      content: '';
+      position: absolute;
+      top: -20px;
+      right: -20px;
+      width: 70px;
+      height: 70px;
+      background: rgba(244, 63, 94, 0.08);
+      border-radius: 50%;
+    }
+
+    .envelope-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-hover);
+      border-color: var(--primary-rose);
+    }
+
+    .envelope-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .envelope-trigger {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      line-height: 1.4;
+    }
+
+    .envelope-action {
+      font-size: 0.75rem;
+      color: var(--primary-rose);
+      font-weight: 600;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ==========================================================================
+       7. MODALE INTERACTIVE (ENVELOPE MESSAGE / ZOOM PHOTO)
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: white;
+      border-radius: 24px;
+      max-width: 500px;
+      width: 100%;
+      padding: 32px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      position: relative;
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-overlay.active .modal-box {
+      transform: scale(1);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #f1f5f9;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: bold;
+      color: var(--text-muted);
+    }
+
+    .modal-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+      color: var(--text-dark);
+    }
+
+    .modal-body {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .modal-gift-box {
+      background: var(--bg-gradient);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px dashed var(--primary-rose);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .modal-gift-box span {
+      font-size: 24px;
+    }
+
+    /* Animation Pluie de Cœurs */
+    .heart-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 999;
+      animation: floatUp 3s linear forwards;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(0.8); opacity: 1; }
+      100% { transform: translateY(-100vh) scale(1.2); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Audio de fond (Chanson Romantique) -->
+  <audio id="bg-music" loop src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-acoustic-guitar-112349.mp3"></audio>
+
+  <!-- En-tête -->
+  <header>
+    <div class="header-container">
+      <div class="logo-group" onclick="spawnHearts(event)">
+        <div class="heart-badge">❤️</div>
+        <div class="title-group">
+          <!-- PERSONNALISABLE : Nom de ta copine -->
+          <h1 id="girlfriend-name-display">Mon Amour</h1>
+          <p>Cadeau d'Anniversaire</p>
+        </div>
+      </div>
+
+      <!-- Lecteur de Musique -->
+      <div class="music-widget">
+        <button class="music-btn" id="music-toggle" onclick="toggleAudio()">▶</button>
+        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark);">Notre Chanson</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Section Principale / Hero -->
+  <section class="hero">
+    <span class="hero-tag">✨ Un univers juste pour nous</span>
+    <h2>Joyeux Anniversaire Mon Cœur ❤️</h2>
+    <p>Chaque seconde passée à tes côtés est un cadeau précieux. Voici quelques-uns de nos plus beaux moments ensemble.</p>
+
+    <!-- Compteur d'amour -->
+    <div class="counter-card">
+      <div class="counter-title">Ensemble depuis</div>
+      <div class="counter-grid">
+        <div class="counter-item"><span class="counter-value" id="c-years">0</span><span class="counter-unit">Ans</span></div>
+        <div class="counter-item"><span class="counter-value" id="c-months">0</span><span class="counter-unit">Mois</span></div>
+        <div class="counter-item"><span class="counter-value" id="c-days">0</span><span class="counter-unit">Jours</span></div>
+        <div class="counter-item"><span class="counter-value" id="c-hours">0</span><span class="counter-unit">Heures</span></div>
+        <div class="counter-item"><span class="counter-value" id="c-min">0</span><span class="counter-unit">Min</span></div>
+        <div class="counter-item"><span class="counter-value" id="c-sec">0</span><span class="counter-unit">Sec</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Boutons d'onglets pour passer d'une section à l'autre -->
+  <div class="tab-navigation">
+    <button class="tab-btn active" onclick="switchTab('museum', this)">🖼️ Le Musée de Nous</button>
+    <button class="tab-btn" onclick="switchTab('letters', this)">✉️ Lettres "Ouvre quand..."</button>
+  </div>
+
+  <!-- ONGLET 1 : LE MUSÉE DE NOUS (POLAROIDS 3D) -->
+  <main id="tab-museum" class="tab-content active">
+    <div class="polaroid-grid" id="polaroid-grid-container">
+      <!-- Les cartes polaroids seront générées dynamiquement par JavaScript -->
+    </div>
+  </main>
+
+  <!-- ONGLET 2 : LETTRES "OUVRE QUAND..." -->
+  <main id="tab-letters" class="tab-content">
+    <div class="letters-grid" id="letters-grid-container">
+      <!-- Les enveloppes seront générées dynamiquement par JavaScript -->
+    </div>
+  </main>
+
+  <!-- Fenêtre Modale pour afficher les lettres "Ouvre Quand..." -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <button class="close-btn" onclick="closeModal()">✕</button>
+      <h3 class="modal-title" id="modal-title">Titre de la lettre</h3>
+      <div class="modal-body" id="modal-body">Contenu de la lettre...</div>
+      <div class="modal-gift-box">
+        <span>🎁</span>
+        <div>
+          <strong style="font-size: 0.8rem; color: var(--primary-rose); text-transform: uppercase;">Bonus / Promesse</strong>
+          <p id="modal-gift" style="font-size: 0.85rem; color: var(--text-dark); margin-top: 2px;"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+     8. LOGIQUE JAVASCRIPT (DOM MANIPULATION & DATA)
+     ========================================================================== -->
+  <script>
+    /* 
+      1. DONNÉES PERSONNALISABLES (Tu peux modifier les contenus ci-dessous !)
+    */
+    
+    // Date du début de votre histoire (Format: YYYY-MM-DDTHH:MM:SS)
+    const START_DATE = "2022-06-14T18:30:00"; 
+
+    // Liste des Polaroids pour "Le Musée de Nous"
+    const POLAROIDS_DATA = [
+      {
+        title: "Notre Première Rencontre",
+        date: "14 Juin 2022",
+        location: "Le Café des Fleurs, Paris",
+        photoUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=800&auto=format&fit=crop",
+        note: "Je me rappelle encore du premier regard et de ton sourire timide. Ce jour-là, ma vie a changé pour toujours.",
+        song: "L-O-V-E - Nat King Cole"
+      },
+      {
+        title: "Notre Premier Voyage",
+        date: "12 Octobre 2022",
+        location: "Falaises d'Étretat",
+        photoUrl: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=800&auto=format&fit=crop",
+        note: "Le vent marin, nos mains serrées dans les poches, et ce coucher de soleil magnifique.",
+        song: "La Vie En Rose - Edith Piaf"
+      },
+      {
+        title: "Soirée Cocooning",
+        date: "28 Décembre 2022",
+        location: "À la maison",
+        photoUrl: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?q=80&w=800&auto=format&fit=crop",
+        note: "Du chocolat chaud, un plaid tout doux et toi contre moi. Mes moments préférés sont les plus simples.",
+        song: "Perfect - Ed Sheeran"
+      },
+      {
+        title: "Pique-Nique d'Été",
+        date: "20 Mai 2023",
+        location: "Parc des Buttes-Chaumont",
+        photoUrl: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=800&auto=format&fit=crop",
+        note: "Des rires aux éclats, des fraises fraîches et le soleil qui traversait les feuillages.",
+        song: "Beyond - Leon Bridges"
+      }
+    ];
+
+    // Liste des enveloppes pour "Ouvre quand..."
+    const LETTERS_DATA = [
+      {
+        icon: "🎂",
+        trigger: "Ouvre le soir de ton anniversaire",
+        title: "Joyeux Anniversaire mon Amour ! ❤️",
+        message: "Aujourd'hui nous célébrons le jour où le monde a reçu le plus beau des cadeaux : toi. Merci de rendre ma vie plus lumineuse chaque jour.",
+        gift: "Regarde sous ton oreiller pour une surprise physiquement cachée 😉"
+      },
+      {
+        icon: "🌧️",
+        trigger: "Ouvre quand tu as eu une journée difficile",
+        title: "Respire un grand coup... 🤍",
+        message: "N'oublie pas à quel point tu es forte et incroyable. Cette journée se termine, mais mon amour pour toi est constant. Rentre vite, un câlin géant t'attend.",
+        gift: "Ce soir, massage des épaules garanti !"
+      },
+      {
+        icon: "✈️",
+        trigger: "Ouvre quand je te manque",
+        title: "Toujours près de toi 💌",
+        message: "Peu importe la distance, tu occupes toutes mes pensées. Ferme les yeux : je suis juste là avec toi.",
+        gift: "Envoie-moi un '❤️' et je t'appelle dans la minute !"
+      },
+      {
+        icon: "🗺️",
+        trigger: "Ouvre quand tu veux planifier notre voyage",
+        title: "Prochaine Escale... 🧳",
+        message: "Choisis 3 destinations qui te font rêver, et je m'occupe d'organiser la suite !",
+        gift: "Bon pour un week-end surprise choisi par toi."
+      }
+    ];
+
+    /* 
+      2. LOGIQUE DU COMPTEUR DE TEMPS (TEMPS ÉCOULÉ)
+    */
+    function updateCounter() {
+      const start = new Date(START_DATE).getTime();
+      const now = new Date().getTime();
+      const diff = Math.max(0, now - start);
+
+      const seconds = Math.floor((diff / 1000) % 60);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const daysTotal = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+      const years = Math.floor(daysTotal / 365);
+      const months = Math.floor((daysTotal % 365) / 30);
+      const days = Math.floor((daysTotal % 365) % 30);
+
+      // Injection dans le DOM
+      document.getElementById('c-years').innerText = years;
+      document.getElementById('c-months').innerText = months;
+      document.getElementById('c-days').innerText = days;
+      document.getElementById('c-hours').innerText = hours;
+      document.getElementById('c-min').innerText = minutes;
+      document.getElementById('c-sec').innerText = seconds;
+    }
+    // Mise à jour toutes les secondes
+    setInterval(updateCounter, 1000);
+    updateCounter();
+
+    /* 
+      3. RENDER DYNAMIQUE DES POLAROIDS (MANIPULATION DOM)
+    */
+    function renderPolaroids() {
+      const container = document.getElementById('polaroid-grid-container');
+      container.innerHTML = '';
+
+      POLAROIDS_DATA.forEach((item, index) => {
+        // Rotation aléatoire légère pour créer un effet photo pêle-mêle naturel
+        const rotation = (index % 2 === 0 ? -2 : 2);
+
+        const cardHTML = `
+          <div class="polaroid-container" style="transform: rotate(${rotation}deg)" onclick="this.classList.toggle('flipped')">
+            <div class="polaroid-card">
+              <!-- RECTO -->
+              <div class="polaroid-front">
+                <div class="polaroid-image-wrapper">
+                  <img src="${item.photoUrl}" alt="${item.title}">
+                </div>
+                <div class="polaroid-caption">
+                  <h3>${item.title}</h3>
+                  <p>📍 ${item.location} • ${item.date}</p>
+                </div>
+              </div>
+              <!-- VERSO -->
+              <div class="polaroid-back">
+                <div>
+                  <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary-rose); border-bottom: 1px solid #fef08a; padding-bottom: 4px;">
+                    ${item.date}
+                  </div>
+                  <p class="polaroid-note">"${item.note}"</p>
+                </div>
+                <div class="polaroid-song-badge">
+                  🎵 ${item.song}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        container.innerHTML += cardHTML;
+      });
+    }
+
+    /* 
+      4. RENDER DYNAMIQUE DES ENVELOPPES
+    */
+    function renderLetters() {
+      const container = document.getElementById('letters-grid-container');
+      container.innerHTML = '';
+
+      LETTERS_DATA.forEach((letter, index) => {
+        const letterHTML = `
+          <div class="envelope-card" onclick="openModal(${index})">
+            <div>
+              <div class="envelope-icon">${letter.icon}</div>
+              <div class="envelope-trigger">${letter.trigger}</div>
+            </div>
+            <div class="envelope-action">Ouvrir la lettre ➔</div>
+          </div>
+        `;
+        container.innerHTML += letterHTML;
+      });
+    }
+
+    /* 
+      5. GESTION DU LECTEUR AUDIO
+    */
+    const audio = document.getElementById('bg-music');
+    const musicBtn = document.getElementById('music-toggle');
+
+    function toggleAudio() {
+      if (audio.paused) {
+        audio.play();
+        musicBtn.innerText = '⏸';
+      } else {
+        audio.pause();
+        musicBtn.innerText = '▶';
+      }
+    }
+
+    /* 
+      6. GESTION DES ONGLETS (GESTION DES CLASSES CSS VIA JS)
+    */
+    function switchTab(tabName, btnElement) {
+      // Masquer tous les onglets
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+      // Activer l'onglet sélectionné
+      document.getElementById('tab-' + tabName).classList.add('active');
+      btnElement.classList.add('active');
+    }
+
+    /* 
+      7. GESTION DE LA MODALE
+    */
+    function openModal(index) {
+      const data = LETTERS_DATA[index];
+      document.getElementById('modal-title').innerText = data.title;
+      document.getElementById('modal-body').innerText = data.message;
+      document.getElementById('modal-gift').innerText = data.gift;
+      document.getElementById('modal-overlay').classList.add('active');
+      spawnHearts();
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('active');
+    }
+
+    /* 
+      8. ANIMATION PARTICULES / PLUIE DE CŒURS
+    */
+    function spawnHearts(e) {
+      for (let i = 0; i < 12; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'heart-particle';
+        heart.innerText = i % 2 === 0 ? '💖' : '✨';
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.top = '100vh';
+        heart.style.fontSize = (16 + Math.random() * 20) + 'px';
+        heart.style.animationDuration = (2 + Math.random() * 2) + 's';
+        document.body.appendChild(heart);
+
+        setTimeout(() => heart.remove(), 3000);
+      }
+    }
+
+    // Initialisation au chargement de la page
+    window.onload = () => {
+      renderPolaroids();
+      renderLetters();
+    };
+  </script>
+</body>
+</html>
