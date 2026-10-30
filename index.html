@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#fdfbf7">
+    <meta name="description" content="Une capsule privée pour garder et ouvrir vos souvenirs à deux, chaque mois.">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Amo-te">
+    <title>Amo-te — Notre capsule</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Amo-te, accueil">
+          <span class="brand-mark" aria-hidden="true">a.</span>
+          <span>Amo-te</span>
+        </a>
+        <div id="account-area" class="account-area" hidden>
+          <span id="account-name" class="account-name"></span>
+          <button id="sign-out-button" class="button button-quiet" type="button">Déconnexion</button>
+        </div>
+      </header>
+
+      <main>
+        <section id="setup-screen" class="setup-screen" hidden>
+          <span class="eyebrow">Notre espace privé</span>
+          <h1>Un petit coin à nous.</h1>
+          <p>La connexion à Supabase n’est pas encore configurée. Ajoutez les variables indiquées dans le README pour ouvrir votre capsule.</p>
+        </section>
+
+        <section id="auth-screen" class="auth-screen" hidden>
+          <div class="auth-intro">
+            <span class="eyebrow">À ouvrir à deux</span>
+            <h1>Nos souvenirs<br>au fil des mois.</h1>
+            <p>Dépose une image, quelques mots, ou les deux. L’autre les découvrira le 25.</p>
+          </div>
+          <form id="login-form" class="paper-card auth-card">
+            <span class="card-kicker">Ravie de te retrouver</span>
+            <label for="email">Adresse e-mail</label>
+            <input id="email" name="email" type="email" autocomplete="username" required>
+            <label for="password">Mot de passe</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+            <button class="button button-primary button-wide" type="submit">Entrer dans notre capsule</button>
+            <button id="forgot-password-button" class="text-button" type="button">Mot de passe oublié ?</button>
+            <p id="auth-message" class="form-message" role="status"></p>
+          </form>
+          <form id="reset-password-form" class="paper-card auth-card" hidden>
+            <span class="card-kicker">Un nouveau départ</span>
+            <h2>Choisis un nouveau mot de passe.</h2>
+            <label for="new-password">Nouveau mot de passe</label>
+            <input id="new-password" name="newPassword" type="password" minlength="8" autocomplete="new-password" required>
+            <button class="button button-primary button-wide" type="submit">Mettre à jour le mot de passe</button>
+            <p id="reset-password-message" class="form-message" role="status"></p>
+          </form>
+        </section>
+
+        <section id="app-screen" hidden>
+          <section class="hero">
+            <span class="eyebrow">Notre rendez-vous mensuel</span>
+            <h1 id="hero-title">Une lettre pour nous.</h1>
+            <p id="hero-description" class="hero-description"></p>
+            <div class="countdown-card" aria-live="polite">
+              <div class="envelope" aria-hidden="true">
+                <div class="envelope-paper"></div>
+                <div class="envelope-flap"></div>
+                <div id="envelope-seal" class="envelope-seal">♡</div>
+              </div>
+              <div class="countdown-copy">
+                <span id="countdown-label" class="card-kicker">La prochaine ouverture dans</span>
+                <div id="countdown" class="countdown" aria-label="Compte à rebours">
+                  <span><strong id="count-days">00</strong><small>jours</small></span>
+                  <span><strong id="count-hours">00</strong><small>heures</small></span>
+                  <span><strong id="count-minutes">00</strong><small>minutes</small></span>
+                  <span><strong id="count-seconds">00</strong><small>secondes</small></span>
+                </div>
+                <p id="capsule-status" class="status-line"></p>
+              </div>
+            </div>
+            <div class="push-optin">
+              <button id="enable-push-button" class="button button-secondary" type="button">Activer les rappels sur cet appareil</button>
+            </div>
+          </section>
+
+          <nav class="tabs" aria-label="Sections de la capsule">
+            <button class="tab-button is-active" data-view="current" type="button">Ce mois-ci</button>
+            <button class="tab-button" data-view="history" type="button">Nos archives</button>
+            <button id="admin-tab" class="tab-button" data-view="admin" type="button" hidden>Administration</button>
+          </nav>
+
+          <section id="current-view" class="view-panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">La capsule du mois</span>
+                <h2 id="current-month-title">Nos petits moments</h2>
+              </div>
+              <button id="add-memory-button" class="button button-primary add-button" type="button">
+                <span aria-hidden="true">+</span> Ajouter un souvenir
+              </button>
+            </div>
+            <p id="visibility-note" class="visibility-note"></p>
+            <div id="current-memories" class="memory-grid"></div>
+          </section>
+
+          <section id="history-view" class="view-panel" hidden>
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Le temps qui passe</span>
+                <h2>Nos archives</h2>
+              </div>
+            </div>
+            <div id="archive-list" class="archive-list"></div>
+            <div id="archive-content" class="archive-content" hidden></div>
+          </section>
+
+          <section id="admin-view" class="view-panel" hidden>
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Notre petit tableau de bord</span>
+                <h2>Administration</h2>
+              </div>
+            </div>
+            <div class="admin-grid">
+              <article class="paper-card admin-card">
+                <span class="card-kicker">Ce mois-ci</span>
+                <h3>État de la capsule</h3>
+                <div id="capsule-progress" class="progress-list"></div>
+              </article>
+              <article class="paper-card admin-card">
+                <span class="card-kicker">Un doux rappel</span>
+                <h3>Envoyer un rappel</h3>
+                <p>Les appareils qui ont activé les notifications recevront un petit mot pour penser à la capsule.</p>
+                <div class="admin-actions">
+                  <button id="send-reminder-button" class="button button-primary" type="button">Envoyer un rappel</button>
+                </div>
+              </article>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <footer class="footer"><span>Fait avec tendresse, pour nous deux.</span></footer>
+    </div>
+
+    <dialog id="memory-dialog" class="memory-dialog">
+      <form id="memory-form" class="paper-card memory-form">
+        <button id="close-dialog-button" class="dialog-close" type="button" aria-label="Fermer">×</button>
+        <span class="eyebrow">Un souvenir à garder</span>
+        <h2>Qu’aimerais-tu déposer ?</h2>
+        <label for="memory-note">Une note, une anecdote…</label>
+        <textarea id="memory-note" name="note" rows="4" maxlength="2000" placeholder="Quelques mots pour nous…"></textarea>
+        <label for="camera-photo">Prendre une photo</label>
+        <input id="camera-photo" name="cameraPhoto" type="file" accept="image/*" capture="environment">
+        <label for="gallery-photo">Ou choisir dans la galerie</label>
+        <input id="gallery-photo" name="galleryPhoto" type="file" accept="image/*">
+        <p class="input-hint">Image JPEG, PNG ou WebP, 10 Mo maximum.</p>
+        <button class="button button-primary button-wide" type="submit">Déposer dans la capsule</button>
+        <p id="memory-message" class="form-message" role="status"></p>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/script.js"></script>
+  </body>
+</html>
