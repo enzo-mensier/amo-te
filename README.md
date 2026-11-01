@@ -14,7 +14,7 @@ L’interface évoque un carnet de souvenirs : papier crème (`#fdfbf7`), lettre
 
 ## Fonctionnalités
 
-- Deux comptes privés, accessibles avec un profil et un code personnel de huit chiffres.
+- Deux comptes privés, accessibles avec un profil et un code personnel de quatre chiffres.
 - Ajout d’une note, d’une photo prise avec l’appareil mobile ou d’une photo sélectionnée dans la galerie.
 - Photos JPEG, PNG ou WebP, jusqu’à 10 Mo par fichier.
 - Verrouillage des données et des fichiers appliqué côté Supabase avec les politiques RLS et Storage — pas seulement masqué dans l’interface.
@@ -90,7 +90,7 @@ L’application n’a volontairement pas de formulaire d’inscription public. L
 
 ### Connexion par code personnel
 
-L’écran de connexion demande de choisir **Toi** ou **Elle**, puis de saisir un code personnel de huit chiffres. Le code est vérifié côté serveur par la fonction Supabase `login-with-code` et n’est jamais inclus dans le JavaScript public, le dépôt Git ou les variables publiques Netlify. Choisis deux codes différents et non prévisibles ; évite les dates de naissance et les suites simples.
+L’écran de connexion demande de choisir **Enzo** ou **Ana**, puis de saisir un code personnel de quatre chiffres. Le compte Enzo conserve le rôle `admin` et ses contrôles d’administration. Le code est vérifié côté serveur par la fonction Supabase `login-with-code` et n’est jamais inclus dans le JavaScript public, le dépôt Git ou les variables publiques Netlify. Un code à quatre chiffres est moins sûr qu’un code plus long ; le limiteur bloque les essais répétés, mais choisis des codes différents et évite les codes faciles à deviner.
 
 Pour activer cette connexion sur un projet Supabase :
 
@@ -101,8 +101,8 @@ Pour activer cette connexion sur un projet Supabase :
    - `COUPLE_ID` : UUID du couple ;
    - `ADMIN_USER_ID` : UUID du compte admin ;
    - `PARTNER_USER_ID` : UUID du compte partenaire ;
-   - `ADMIN_LOGIN_CODE` : code admin de huit chiffres ;
-   - `PARTNER_LOGIN_CODE` : code partenaire de huit chiffres ;
+   - `ADMIN_LOGIN_CODE` : code admin de quatre chiffres ;
+   - `PARTNER_LOGIN_CODE` : code partenaire de quatre chiffres ;
    - `ALLOWED_ORIGINS` : origines séparées par une virgule, par exemple `https://amo-te-ana.netlify.app,http://localhost:5173`.
 
    `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` sont fournis à la fonction par Supabase. Ne copie jamais la clé `service_role` dans le site ou dans Netlify.
@@ -122,8 +122,8 @@ Tu peux aussi créer et associer le couple manuellement, sans le script :
 ```sql
 insert into public.memberships (couple_id, user_id, role, display_name)
 values
-  ('UUID_DU_COUPLE', 'UUID_DE_TON_COMPTE', 'admin', 'Toi'),
-  ('UUID_DU_COUPLE', 'UUID_DU_COMPTE_PARTENAIRE', 'partner', 'Elle');
+  ('UUID_DU_COUPLE', 'UUID_DE_TON_COMPTE', 'admin', 'Enzo'),
+  ('UUID_DU_COUPLE', 'UUID_DU_COMPTE_PARTENAIRE', 'partner', 'Ana');
 ```
 
 Un couple ne peut avoir qu’un membre `admin`. Les comptes doivent tous deux appartenir au même couple. Ne relance pas le script pour le couple déjà créé : il en crée un nouveau.

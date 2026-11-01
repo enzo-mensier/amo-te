@@ -32,8 +32,8 @@ begin
 
   insert into public.memberships (couple_id, user_id, role, display_name)
   values
-    (new_couple_id, admin_user_id, 'admin', 'Toi'),
-    (new_couple_id, partner_user_id, 'partner', 'Elle');
+    (new_couple_id, admin_user_id, 'admin', 'Enzo'),
+    (new_couple_id, partner_user_id, 'partner', 'Ana');
 
   raise notice 'Couple créé. VITE_COUPLE_ID=%', new_couple_id;
 end

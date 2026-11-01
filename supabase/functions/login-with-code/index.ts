@@ -87,7 +87,7 @@ Deno.serve(async request => {
   }
 
   if ((body.profile !== "admin" && body.profile !== "partner") ||
-      typeof body.code !== "string" || !/^\d{8}$/.test(body.code)) {
+      typeof body.code !== "string" || !/^\d{4}$/.test(body.code)) {
     return jsonResponse({ error: "Invalid code or profile." }, 400, origin);
   }
 
@@ -112,7 +112,7 @@ Deno.serve(async request => {
   const expectedCode = profile === "admin" ? adminCode : partnerCode;
   const userId = profile === "admin" ? adminUserId : partnerUserId;
   const expectedRole = profile;
-  if (!/^\d{8}$/.test(expectedCode) || !constantTimeEqual(body.code, expectedCode)) {
+  if (!/^\d{4}$/.test(expectedCode) || !constantTimeEqual(body.code, expectedCode)) {
     return jsonResponse({ error: "Invalid code or profile." }, 401, origin);
   }
 

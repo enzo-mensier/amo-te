@@ -45,12 +45,12 @@
             <span class="card-kicker">Notre espace à deux</span>
             <label for="profile">Qui es-tu ?</label>
             <select id="profile" name="profile" required>
-              <option value="admin">Toi</option>
-              <option value="partner">Elle</option>
+              <option value="admin">Enzo</option>
+              <option value="partner">Ana</option>
             </select>
             <label for="access-code">Ton code personnel</label>
-            <input id="access-code" name="code" type="password" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" autocomplete="current-password" aria-describedby="code-hint" required>
-            <p id="code-hint" class="field-hint">Saisis ton code à 8 chiffres, choisi pour ton compte.</p>
+            <input id="access-code" name="code" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" aria-describedby="code-hint" required>
+            <p id="code-hint" class="field-hint">Saisis ton code personnel à 4 chiffres.</p>
             <button class="button button-primary button-wide" type="submit">Entrer dans notre capsule</button>
             <p id="auth-message" class="form-message" role="status"></p>
           </form>
