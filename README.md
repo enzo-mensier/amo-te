@@ -14,7 +14,7 @@ L’interface évoque un carnet de souvenirs : papier crème (`#fdfbf7`), lettre
 
 ## Fonctionnalités
 
-- Deux comptes privés, identifiés par e-mail et mot de passe.
+- Deux comptes privés, accessibles avec un profil et un code personnel de huit chiffres.
 - Ajout d’une note, d’une photo prise avec l’appareil mobile ou d’une photo sélectionnée dans la galerie.
 - Photos JPEG, PNG ou WebP, jusqu’à 10 Mo par fichier.
 - Verrouillage des données et des fichiers appliqué côté Supabase avec les politiques RLS et Storage — pas seulement masqué dans l’interface.
@@ -25,7 +25,7 @@ L’interface évoque un carnet de souvenirs : papier crème (`#fdfbf7`), lettre
 ## Stack technique
 
 - **Frontend** : HTML5, CSS3 et JavaScript vanilla avec Vite.
-- **Authentification, base PostgreSQL et stockage privé** : Supabase.
+- **Authentification par code, base PostgreSQL et stockage privé** : Supabase Auth et Edge Functions.
 - **Push Web** : service worker et fonction Edge Supabase.
 - **Hébergement** : Vercel (ou un hébergeur statique HTTPS compatible).
 - **Code source** : GitHub.
@@ -62,11 +62,11 @@ Dans **Project Settings → API Keys** (ou la section de connexion de l’accuei
 
 Ces deux valeurs sont utilisées par le navigateur. La clé `service_role` est secrète : **ne la mets jamais dans `.env.local` sous un nom `VITE_`, dans GitHub, dans Vercel comme variable publique, ni dans le code frontend**.
 
-Le projet `amo-te` est déjà initialisé : la migration, les règles de sécurité et le bucket privé sont installés ; le couple `Notre capsule` existe avec l’identifiant `2cf1992a-d5aa-4a92-b970-49cd3fd6dbe8` et son fuseau est `Europe/Paris`. Le fichier local `.env.local` est déjà relié à ce projet et ignoré par Git.
+Le projet `amo-te` est déjà initialisé : le schéma principal, les règles de sécurité et le bucket privé sont installés ; le couple `Notre capsule` existe avec l’identifiant `2cf1992a-d5aa-4a92-b970-49cd3fd6dbe8` et son fuseau est `Europe/Paris`. Le fichier local `.env.local` est déjà relié à ce projet et ignoré par Git.
 
 ### 2. Créer les tables et les règles de confidentialité
 
-Dans le tableau de bord Supabase, ouvre **SQL Editor**, colle le contenu de [`supabase/migrations/20261030000000_create_capsule.sql`](./supabase/migrations/20261030000000_create_capsule.sql), puis exécute-le. Cette migration crée :
+Pour un projet neuf, dans le tableau de bord Supabase ouvre **SQL Editor**, colle le contenu de [`supabase/migrations/20261030000000_create_capsule.sql`](./supabase/migrations/20261030000000_create_capsule.sql), puis exécute-le. Cette migration crée :
 
 - le couple, ses membres, les capsules, les souvenirs et les abonnements push ;
 - les fonctions SQL qui créent les capsules du mois et donnent à l’admin le seul nombre de dépôts par personne ;
@@ -75,6 +75,8 @@ Dans le tableau de bord Supabase, ouvre **SQL Editor**, colle le contenu de [`su
 
 Il n’est pas nécessaire d’installer PostgreSQL localement pour suivre cette méthode : l’application lancée sur `localhost:5173` utilise la base Supabase hébergée. La CLI Supabase est facultative si tu exécutes la migration dans SQL Editor. Pour lancer un serveur Supabase **entièrement sur ta machine**, la CLI et Docker Desktop sont en revanche nécessaires ; ce n’est pas le projet référencé ici.
 
+Sur le projet amo-te déjà existant, les migrations de correction du stockage et de limitation des codes doivent aussi être exécutées une seule fois.
+
 ### 3. Comptes Auth
 
 Deux comptes de test confirmés existent déjà dans **Authentication → Users** :
@@ -82,9 +84,30 @@ Deux comptes de test confirmés existent déjà dans **Authentication → Users*
 - `amo-te.admin@example.com` — rôle `admin` ;
 - `amo-te.partner@example.com` — rôle `partner`.
 
-Ce sont des adresses fictives sur le domaine réservé `example.com` : elles ne reçoivent pas de courrier. Leurs mots de passe temporaires ont été communiqués dans la conversation et ne sont pas stockés dans le dépôt. Avant d’offrir le site, crée deux utilisateurs avec les vraies adresses depuis **Authentication → Users**, puis remplace les adhésions de test.
+Ce sont des adresses fictives sur le domaine réservé `example.com` : elles ne reçoivent pas de courrier. Elles restent l’identité interne des comptes Supabase, mais ne sont plus demandées dans l’écran de connexion. Avant d’offrir le site, crée deux utilisateurs avec les vraies adresses depuis **Authentication → Users**, puis remplace les adhésions de test et les UUID configurés dans les secrets de la fonction.
 
 L’application n’a volontairement pas de formulaire d’inscription public. La création des comptes reste réservée au propriétaire du projet Supabase.
+
+### Connexion par code personnel
+
+L’écran de connexion demande de choisir **Toi** ou **Elle**, puis de saisir un code personnel de huit chiffres. Le code est vérifié côté serveur par la fonction Supabase `login-with-code` et n’est jamais inclus dans le JavaScript public, le dépôt Git ou les variables publiques Netlify. Choisis deux codes différents et non prévisibles ; évite les dates de naissance et les suites simples.
+
+Pour activer cette connexion sur un projet Supabase :
+
+1. Sur le projet amo-te existant, exécute [`supabase/migrations/20261030100000_fix_storage_object_name_policy.sql`](./supabase/migrations/20261030100000_fix_storage_object_name_policy.sql) et [`supabase/migrations/20261031100000_login_code_rate_limits.sql`](./supabase/migrations/20261031100000_login_code_rate_limits.sql) dans **SQL Editor**. La première corrige les politiques de photos ; la seconde crée le limiteur de tentatives, inaccessible aux comptes publics. Pour un projet neuf, la migration principale contient déjà la correction Storage.
+2. Déploie [`supabase/functions/login-with-code/index.ts`](./supabase/functions/login-with-code/index.ts) comme fonction Edge `login-with-code`, avec la vérification JWT désactivée pour cette fonction : l’utilisateur n’a pas encore de session au moment où il entre son code. La fonction utilise ensuite les liens magiques Supabase uniquement côté serveur pour établir une session normale.
+3. Dans les secrets Edge Functions du projet, configure :
+
+   - `COUPLE_ID` : UUID du couple ;
+   - `ADMIN_USER_ID` : UUID du compte admin ;
+   - `PARTNER_USER_ID` : UUID du compte partenaire ;
+   - `ADMIN_LOGIN_CODE` : code admin de huit chiffres ;
+   - `PARTNER_LOGIN_CODE` : code partenaire de huit chiffres ;
+   - `ALLOWED_ORIGINS` : origines séparées par une virgule, par exemple `https://amo-te-ana.netlify.app,http://localhost:5173`.
+
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` sont fournis à la fonction par Supabase. Ne copie jamais la clé `service_role` dans le site ou dans Netlify.
+
+La fonction limite à cinq les essais par profil et adresse IP sur une période de quinze minutes. Pour remplacer un code, modifie le secret correspondant dans Supabase ; ne le mets pas dans un fichier du dépôt. Les liens de récupération par e-mail ne sont pas utilisés par cette connexion.
 
 ### 4. Créer le couple et associer les comptes
 
@@ -116,9 +139,9 @@ VITE_COUPLE_ID=UUID_DU_COUPLE
 VITE_VAPID_PUBLIC_KEY=
 ```
 
-Les trois premières valeurs suffisent pour la connexion, les dépôts, les archives et l’administration. La clé VAPID ne sert qu’aux notifications. Après une modification de `.env.local`, redémarre Vite.
+Les trois premières valeurs suffisent pour l’application. Les codes personnels sont configurés comme secrets de la fonction Edge, pas dans `.env.local`. La clé VAPID ne sert qu’aux notifications. Après une modification de `.env.local`, redémarre Vite.
 
-Dans **Authentication → URL Configuration** de Supabase, autorise l’adresse locale `http://localhost:5173/**` et l’adresse HTTPS de production. Les redirections de réinitialisation de mot de passe utilisent l’adresse du site.
+Dans le secret `ALLOWED_ORIGINS` de la fonction, autorise l’adresse locale `http://localhost:5173` et l’adresse HTTPS de production. Supabase vérifie aussi l’origine des requêtes avant d’accepter un code.
 
 ## Notifications push
 
@@ -153,7 +176,8 @@ Les notifications sont facultatives. Elles nécessitent HTTPS en production, un 
    - `VITE_COUPLE_ID`
    - `VITE_VAPID_PUBLIC_KEY` (si tu actives les notifications)
 
-4. Ajoute l’URL Vercel dans les URL de redirection autorisées de Supabase et redéploie le site.
+4. Configure l’origine de production dans le secret `ALLOWED_ORIGINS` de la fonction `login-with-code`, puis ajoute l’URL Vercel aux URL autorisées de Supabase si tu utilises des liens de récupération.
+5. Redéploie la fonction Edge après son installation et redéploie le site.
 
 La migration SQL et la fonction `send-reminder` sont déployées sur Supabase ; elles ne sont pas exécutées par le build Vercel.
 
@@ -179,7 +203,7 @@ Les étapes cochées sont présentes dans le code. La création du projet héber
 ### Étape 2 — Supabase et authentification
 
 - [x] Migration des tables, bucket privé, fonctions et politiques RLS.
-- [x] Connexion sécurisée par e-mail et mot de passe pour les deux comptes.
+- [ ] Connexion par code personnel (fonction Edge et secrets à déployer sur Supabase).
 - [x] Enregistrement des souvenirs dans PostgreSQL et Supabase Storage.
 - [x] Créer le projet Supabase, exécuter la migration et associer deux comptes de test.
 - [ ] Remplacer les comptes de test par les deux adresses réelles avant d’offrir le site.

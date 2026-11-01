@@ -188,6 +188,33 @@ main {
   padding: 0 13px;
 }
 
+.auth-card select {
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fffefa;
+  color: var(--ink);
+  font: inherit;
+}
+
+.field-hint,
+.auth-help {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.field-hint {
+  margin: 8px 0 0;
+}
+
+.auth-help {
+  width: min(440px, 100%);
+  margin: 16px auto 0;
+  text-align: center;
+}
+
 .button {
   min-height: 44px;
   display: inline-flex;

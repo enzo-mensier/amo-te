@@ -42,23 +42,19 @@
             <p>Dépose une image, quelques mots, ou les deux. L’autre les découvrira le 25.</p>
           </div>
           <form id="login-form" class="paper-card auth-card">
-            <span class="card-kicker">Ravie de te retrouver</span>
-            <label for="email">Adresse e-mail</label>
-            <input id="email" name="email" type="email" autocomplete="username" required>
-            <label for="password">Mot de passe</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required>
+            <span class="card-kicker">Notre espace à deux</span>
+            <label for="profile">Qui es-tu ?</label>
+            <select id="profile" name="profile" required>
+              <option value="admin">Toi</option>
+              <option value="partner">Elle</option>
+            </select>
+            <label for="access-code">Ton code personnel</label>
+            <input id="access-code" name="code" type="password" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" autocomplete="current-password" aria-describedby="code-hint" required>
+            <p id="code-hint" class="field-hint">Saisis ton code à 8 chiffres, choisi pour ton compte.</p>
             <button class="button button-primary button-wide" type="submit">Entrer dans notre capsule</button>
-            <button id="forgot-password-button" class="text-button" type="button">Mot de passe oublié ?</button>
             <p id="auth-message" class="form-message" role="status"></p>
           </form>
-          <form id="reset-password-form" class="paper-card auth-card" hidden>
-            <span class="card-kicker">Un nouveau départ</span>
-            <h2>Choisis un nouveau mot de passe.</h2>
-            <label for="new-password">Nouveau mot de passe</label>
-            <input id="new-password" name="newPassword" type="password" minlength="8" autocomplete="new-password" required>
-            <button class="button button-primary button-wide" type="submit">Mettre à jour le mot de passe</button>
-            <p id="reset-password-message" class="form-message" role="status"></p>
-          </form>
+          <p class="auth-help">Choisis un code différent de celui de l’autre compte. En cas d’oubli, l’admin peut en définir un nouveau dans les secrets Supabase.</p>
         </section>
 
         <section id="app-screen" hidden>

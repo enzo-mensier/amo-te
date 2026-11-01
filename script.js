@@ -10,7 +10,6 @@ const appScreen = document.querySelector('#app-screen');
 const accountArea = document.querySelector('#account-area');
 const loginForm = document.querySelector('#login-form');
 const authMessage = document.querySelector('#auth-message');
-const resetPasswordForm = document.querySelector('#reset-password-form');
 const memoryDialog = document.querySelector('#memory-dialog');
 const memoryForm = document.querySelector('#memory-form');
 const memoryMessage = document.querySelector('#memory-message');
@@ -30,19 +29,26 @@ let nextMonthRefreshAt = 0;
 let loadedAuthUserId;
 let serviceWorkerRegistration;
 
-if (missingConfig.length) {
-  setupScreen.hidden = false;
-  setupScreen.querySelector('p').textContent =
-    `Configuration manquante : ${missingConfig.join(', ')}. Consulte le README pour connecter le projet à Supabase.`;
-} else {
+function initialize() {
+  if (missingConfig.length) {
+    setupScreen.hidden = false;
+    setupScreen.querySelector('p').textContent =
+      `Configuration manquante : ${missingConfig.join(', ')}. Consulte le README pour connecter le projet à Supabase.`;
+    return;
+  }
+
   supabase = createClient(config.VITE_SUPABASE_URL, config.VITE_SUPABASE_ANON_KEY);
-  start();
+  void start();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initialize, { once: true });
+} else {
+  initialize();
 }
 
 async function start() {
-  document.querySelector('#forgot-password-button').addEventListener('click', resetPassword);
   loginForm.addEventListener('submit', signIn);
-  resetPasswordForm.addEventListener('submit', updatePassword);
   document.querySelector('#sign-out-button').addEventListener('click', signOut);
   document.querySelector('#add-memory-button').addEventListener('click', () => memoryDialog.showModal());
   document.querySelector('#close-dialog-button').addEventListener('click', () => memoryDialog.close());
@@ -65,76 +71,47 @@ async function start() {
 
   supabase.auth.onAuthStateChange((event, nextSession) => {
     queueMicrotask(() => {
-      if (event === 'PASSWORD_RECOVERY') {
-        session = nextSession;
-        authScreen.hidden = false;
-        appScreen.hidden = true;
-        accountArea.hidden = true;
-        loginForm.hidden = true;
-        resetPasswordForm.hidden = false;
-      } else {
-        handleSession(nextSession);
-      }
+      handleSession(nextSession);
     });
   });
-}
-
-async function updatePassword(event) {
-  event.preventDefault();
-  const password = String(new FormData(resetPasswordForm).get('newPassword'));
-  const { error } = await supabase.auth.updateUser({ password });
-  setFormMessage(
-    document.querySelector('#reset-password-message'),
-    error ? `La mise à jour a échoué : ${error.message}` : 'Mot de passe mis à jour.',
-    Boolean(error),
-  );
-  if (!error) {
-    resetPasswordForm.reset();
-    loginForm.hidden = false;
-    resetPasswordForm.hidden = true;
-    const { data, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) {
-      showToast(`Mot de passe modifié, mais la session n’a pas pu être vérifiée : ${sessionError.message}`, 'error');
-    } else {
-      await handleSession(data.session);
-      showApp();
-    }
-  }
 }
 
 async function signIn(event) {
   event.preventDefault();
   setFormMessage(authMessage, '');
   const formData = new FormData(loginForm);
+  const profile = String(formData.get('profile') || '');
+  const code = String(formData.get('code') || '');
   const button = loginForm.querySelector('button[type="submit"]');
   button.disabled = true;
   button.textContent = 'Connexion…';
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email: String(formData.get('email')).trim(),
-    password: String(formData.get('password')),
-  });
+  try {
+    const { data, error } = await supabase.functions.invoke('login-with-code', {
+      body: { profile, code },
+    });
+    if (error) {
+      setFormMessage(authMessage, 'Connexion impossible. Vérifie ton code ou réessaie dans quelques minutes.', true);
+      return;
+    }
+    if (!data?.access_token || !data?.refresh_token) {
+      setFormMessage(authMessage, 'Le service de connexion a renvoyé une réponse invalide. Réessaie plus tard.', true);
+      return;
+    }
 
-  button.disabled = false;
-  button.textContent = 'Entrer dans notre capsule';
-  if (error) setFormMessage(authMessage, error.message, true);
-}
-
-async function resetPassword() {
-  const email = String(new FormData(loginForm).get('email') || '').trim();
-  if (!email) {
-    setFormMessage(authMessage, 'Saisis ton adresse e-mail avant de demander une réinitialisation.', true);
-    return;
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+    });
+    if (sessionError) {
+      setFormMessage(authMessage, `Connexion impossible : ${sessionError.message}`, true);
+    }
+  } catch (error) {
+    setFormMessage(authMessage, `Le service de connexion est momentanément indisponible : ${error.message}`, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Entrer dans notre capsule';
   }
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin,
-  });
-  setFormMessage(
-    authMessage,
-    error ? `Envoi impossible : ${error.message}` : 'Si ce compte existe, un e-mail de réinitialisation vient d’être envoyé.',
-    Boolean(error),
-  );
 }
 
 async function signOut() {
@@ -167,7 +144,7 @@ async function handleSession(nextSession) {
   coupleMembers = [];
   clearPrivateContent();
   showAuth();
-  document.querySelector('#account-name').textContent = session.user.email || 'Connecté·e';
+  document.querySelector('#account-name').textContent = 'Connexion…';
 
   const { data, error } = await supabase
     .from('memberships')
@@ -182,6 +159,7 @@ async function handleSession(nextSession) {
   }
   loadedAuthUserId = session.user.id;
   if (!data) {
+    document.querySelector('#account-name').textContent = 'Compte non associé';
     showApp();
     document.querySelector('#hero-title').textContent = 'Compte à associer.';
     document.querySelector('#hero-description').textContent =
@@ -192,6 +170,7 @@ async function handleSession(nextSession) {
   }
 
   member = data;
+  document.querySelector('#account-name').textContent = member.display_name;
   await loadWorkspace();
   showApp();
 }
@@ -650,7 +629,6 @@ function showAuth() {
   appScreen.hidden = true;
   accountArea.hidden = true;
   loginForm.hidden = false;
-  resetPasswordForm.hidden = true;
 }
 
 function showApp() {
