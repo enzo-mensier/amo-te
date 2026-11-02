@@ -423,6 +423,89 @@ main {
   font-size: 1.27rem;
 }
 
+.letter-opening-card {
+  width: min(700px, 100%);
+  margin: 39px auto 0;
+}
+
+.letter-button {
+  width: 100%;
+  min-height: 330px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  border: 1px solid #eadfd1;
+  border-radius: 20px;
+  background: rgba(255, 254, 250, 0.94);
+  box-shadow: 0 15px 40px rgba(91, 62, 41, 0.08);
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.letter-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 19px 48px rgba(91, 62, 41, 0.13);
+}
+
+.letter-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.letter-envelope {
+  width: 190px;
+  height: 128px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d5b9a2;
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, transparent 49%, #edddce 50%) left / 50% 100% no-repeat,
+    linear-gradient(215deg, transparent 49%, #f3e5d8 50%) right / 50% 100% no-repeat,
+    #f7e9dc;
+  box-shadow: 0 12px 24px rgba(99, 67, 47, 0.14);
+  color: #fff8f1;
+}
+
+.letter-envelope span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #914b4a;
+  border-radius: 50%;
+  background: var(--rose);
+  font-size: 1.25rem;
+}
+
+.letter-title {
+  color: var(--ink);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.45rem, 4vw, 2rem);
+}
+
+.letter-instruction {
+  color: var(--rose-dark);
+  font-family: 'Caveat', cursive;
+  font-size: 1.35rem;
+}
+
+.capsule-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 26px auto 0;
+}
+
+.capsule-actions .status-line {
+  flex-basis: 100%;
+}
+
 .push-optin {
   margin-top: 16px;
 }
@@ -597,6 +680,10 @@ main {
   font-size: 1.6rem;
   font-weight: 500;
   text-transform: capitalize;
+}
+
+.archive-download {
+  margin: 0 0 22px;
 }
 
 .admin-grid {
@@ -872,6 +959,24 @@ main {
 
   .countdown-copy {
     min-width: 0;
+  }
+
+  .letter-button {
+    min-height: 285px;
+    padding: 24px 16px;
+  }
+
+  .letter-envelope {
+    width: 160px;
+    height: 110px;
+  }
+
+  .capsule-actions {
+    flex-direction: column;
+  }
+
+  .capsule-actions .button {
+    width: 100%;
   }
 
   .countdown {

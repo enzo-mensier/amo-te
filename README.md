@@ -19,10 +19,10 @@ Une capsule privée pour garder des photos et des mots doux, puis les découvrir
 
 ## Fonctionnement
 
-- Chaque mois, Ana et Enzo peuvent déposer une note, une photo prise avec l’appareil ou une image de la galerie.
-- Les souvenirs sont privés : avant l’ouverture, chacun ne voit que ses propres dépôts. Les règles Supabase protègent aussi les notes et les fichiers, pas seulement l’interface.
-- Une capsule devient visible le **25 du mois suivant, à minuit dans le fuseau du couple**. Par exemple, les souvenirs d’octobre s’ouvrent le 25 novembre.
-- Les capsules ouvertes qui contiennent des souvenirs apparaissent dans **Nos archives**.
+- Pendant le mois, Ana et Enzo peuvent déposer des notes, des photos prises avec l’appareil ou des images de la galerie. Les capsules du mois s’ouvrent le **25 à minuit dans le fuseau du couple**.
+- Avant l’ouverture, les souvenirs restent cachés. Le 25, le compte à rebours laisse place à une grande lettre à ouvrir. Le serveur refuse une ouverture anticipée et ne révèle les notes et photos qu’après l’ouverture explicite.
+- Après l’ouverture, les souvenirs apparaissent dans l’ordre chronologique. Un récapitulatif HTML téléchargeable comprend les notes, les photos intégrées et le nombre de souvenirs de chaque personne.
+- Le bouton **Relancer la capsule** n’apparaît qu’après l’ouverture. Il démarre le cycle suivant ; la capsule ouverte rejoint alors **Nos archives**, consultables et téléchargeables comme la capsule actuelle.
 - Le compte Enzo dispose du panneau d’administration, des compteurs de dépôts et de l’envoi manuel de notifications push personnalisées.
 - L’application est responsive et installable comme PWA. La connexion Internet reste nécessaire pour s’authentifier et accéder aux données.
 
@@ -73,8 +73,9 @@ Pour un nouveau projet Supabase, exécute les migrations dans l’ordre chronolo
 1. `supabase/migrations/20261030000000_create_capsule.sql`
 2. `supabase/migrations/20261030100000_fix_storage_object_name_policy.sql`
 3. `supabase/migrations/20261031100000_login_code_rate_limits.sql`
+4. `supabase/migrations/20261102110000_capsule_opening_cycle.sql`
 
-Elles créent les tables, les fonctions SQL, les règles RLS et Storage, le bucket privé `capsule-photos` ainsi que le limiteur d’essais de connexion. Sur un projet déjà initialisé, n’exécute pas de nouveau la migration initiale : vérifie quelles migrations ont déjà été appliquées.
+Elles créent les tables, les fonctions SQL, les règles RLS et Storage, le bucket privé `capsule-photos`, le limiteur d’essais de connexion et le cycle d’ouverture/redémarrage des capsules. Sur un projet déjà initialisé, n’exécute pas de nouveau la migration initiale : vérifie quelles migrations ont déjà été appliquées et applique seulement les migrations manquantes, dans l’ordre.
 
 Pour un nouveau couple :
 

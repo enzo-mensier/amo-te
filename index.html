@@ -62,7 +62,7 @@
             <span class="eyebrow">Notre rendez-vous mensuel</span>
             <h1 id="hero-title">Une lettre pour nous.</h1>
             <p id="hero-description" class="hero-description"></p>
-            <div class="countdown-card" aria-live="polite">
+            <div id="countdown-card" class="countdown-card" aria-live="polite">
               <div class="envelope" aria-hidden="true">
                 <div class="envelope-paper"></div>
                 <div class="envelope-flap"></div>
@@ -78,6 +78,18 @@
                 </div>
                 <p id="capsule-status" class="status-line"></p>
               </div>
+            </div>
+            <div id="letter-opening-card" class="letter-opening-card" hidden>
+              <button id="open-capsule-button" class="letter-button" type="button">
+                <span class="letter-envelope" aria-hidden="true"><span>♡</span></span>
+                <span class="letter-title">Une lettre pour nous deux</span>
+                <span class="letter-instruction">Cliquer pour découvrir nos souvenirs</span>
+              </button>
+            </div>
+            <div id="capsule-actions" class="capsule-actions" hidden>
+              <p id="opened-status" class="status-line">La capsule est ouverte.</p>
+              <button id="download-capsule-button" class="button button-secondary" type="button">Télécharger le récapitulatif</button>
+              <button id="start-next-capsule-button" class="button button-primary" type="button">Relancer la capsule</button>
             </div>
             <div class="push-optin">
               <button id="enable-push-button" class="button button-secondary" type="button">Activer les rappels sur cet appareil</button>

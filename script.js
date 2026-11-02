@@ -23,12 +23,9 @@ let session;
 let member;
 let couple;
 let capsule;
-let nextOpening;
 let coupleMembers = [];
 let countdownTimer;
 let toastTimer;
-let refreshingMonth = false;
-let nextMonthRefreshAt = 0;
 let loadedAuthUserId;
 let serviceWorkerRegistration;
 
@@ -55,6 +52,9 @@ async function start() {
   document.querySelector('#sign-out-button').addEventListener('click', signOut);
   document.querySelector('#add-memory-button').addEventListener('click', () => memoryDialog.showModal());
   document.querySelector('#close-dialog-button').addEventListener('click', () => memoryDialog.close());
+  document.querySelector('#open-capsule-button').addEventListener('click', openCurrentCapsule);
+  document.querySelector('#download-capsule-button').addEventListener('click', () => downloadCapsule(capsule.id));
+  document.querySelector('#start-next-capsule-button').addEventListener('click', startNextCapsule);
   memoryForm.addEventListener('submit', addMemory);
   document.querySelectorAll('.tab-button').forEach(button => {
     button.addEventListener('click', () => switchView(button.dataset.view));
@@ -62,6 +62,10 @@ async function start() {
   document.querySelector('#enable-push-button').addEventListener('click', enablePush);
   document.querySelector('#push-message-form').addEventListener('submit', sendReminder);
   document.querySelector('#archive-list').addEventListener('click', openArchive);
+  document.querySelector('#archive-content').addEventListener('click', event => {
+    const button = event.target.closest('[data-download-capsule]');
+    if (button) void downloadCapsule(button.dataset.downloadCapsule);
+  });
   serviceWorkerRegistration = await registerServiceWorker();
 
   const { data, error } = await supabase.auth.getSession();
@@ -209,32 +213,23 @@ async function loadWorkspace() {
     return;
   }
 
-  const { data: nextOpeningRow, error: nextOpeningError } = await supabase
-    .from('capsules')
-    .select('month, opens_at')
-    .eq('couple_id', member.couple_id)
-    .gt('opens_at', new Date().toISOString())
-    .order('opens_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (nextOpeningError) {
-    showToast(`Impossible de charger la prochaine ouverture : ${nextOpeningError.message}`, 'error');
-    return;
-  }
-  nextOpening = nextOpeningRow || capsule;
-
   document.querySelector('#hero-title').textContent = couple.name;
   document.querySelector('#hero-description').textContent =
-    'Dépose une image ou quelques mots : chacun découvrira les souvenirs de l’autre le 25.';
+    capsule.opened_at
+      ? 'La lettre est ouverte : retrouvez vos souvenirs du mois, réunis dans leur ordre de dépôt.'
+      : 'Gardons nos photos et nos mots doux ici. Le 25, la lettre sera prête à être ouverte.';
   document.querySelector('#account-name').textContent = member.display_name;
   document.querySelector('#admin-tab').hidden = member.role !== 'admin';
   document.querySelector('#current-month-title').textContent = formatMonth(capsule.month);
   await renderCurrentMemories();
   await renderArchives();
   if (member.role === 'admin') await renderProgress();
-  updateCountdown();
   clearInterval(countdownTimer);
-  countdownTimer = window.setInterval(updateCountdown, 1000);
+  countdownTimer = undefined;
+  updateCountdown();
+  if (!capsule.opened_at && new Date(capsule.opens_at) > new Date()) {
+    countdownTimer = window.setInterval(updateCountdown, 1000);
+  }
   await updatePushButton();
 }
 
@@ -243,31 +238,41 @@ async function renderCurrentMemories() {
     .from('memories')
     .select('id, capsule_id, author_id, note, photo_path, created_at')
     .eq('capsule_id', capsule.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
   if (error) {
     showToast(`Impossible de charger les souvenirs : ${error.message}`, 'error');
     return;
   }
 
-  const unlocked = new Date(capsule.opens_at) <= new Date();
-  document.querySelector('#visibility-note').textContent = unlocked
-    ? 'La capsule est ouverte : vos souvenirs du mois sont réunis ici.'
-    : 'Tes dépôts restent privés jusqu’au 25. Ceux de l’autre apparaîtront à l’ouverture.';
-  document.querySelector('#capsule-status').textContent = unlocked
+  const opened = Boolean(capsule.opened_at);
+  const ready = new Date(capsule.opens_at) <= new Date();
+  document.querySelector('#visibility-note').textContent = opened
+    ? 'Tous vos souvenirs sont réunis dans l’ordre où vous les avez déposés.'
+    : ready
+      ? 'La lettre est prête. Ouvrez-la ensemble pour découvrir les souvenirs du mois.'
+      : 'Tes dépôts restent cachés jusqu’au 25. Les souvenirs de l’autre apparaîtront après l’ouverture.';
+  document.querySelector('#capsule-status').textContent = opened
     ? 'La capsule du mois est ouverte.'
-    : `Cette lettre est scellée jusqu’au ${formatDate(capsule.opens_at)}.`;
-  document.querySelector('#envelope-seal').textContent = unlocked ? '♡' : '⌑';
-  document.querySelector('#add-memory-button').hidden =
-    getCurrentMonthKey(couple.timezone) !== capsule.month;
-  await renderMemoryCards(document.querySelector('#current-memories'), data);
+    : ready
+      ? 'La lettre est prête à être ouverte.'
+      : `Cette lettre est scellée jusqu’au ${formatDate(capsule.opens_at)}.`;
+  document.querySelector('#envelope-seal').textContent = opened ? '♡' : '⌑';
+  document.querySelector('#add-memory-button').hidden = opened;
+  document.querySelector('#current-memories').hidden = !opened;
+  if (opened) {
+    await renderMemoryCards(document.querySelector('#current-memories'), data);
+  } else {
+    document.querySelector('#current-memories').replaceChildren();
+  }
+  updateCountdown();
 }
 
 async function renderArchives() {
   const { data, error } = await supabase
     .from('capsules')
-    .select('id, month, opens_at, memories(count)')
+    .select('id, month, opened_at')
     .eq('couple_id', member.couple_id)
-    .lt('opens_at', new Date().toISOString())
+    .not('opened_at', 'is', null)
     .neq('id', capsule.id)
     .order('month', { ascending: false });
   if (error) {
@@ -278,17 +283,26 @@ async function renderArchives() {
   const archiveList = document.querySelector('#archive-list');
   archiveList.replaceChildren();
   document.querySelector('#archive-content').hidden = true;
-  const filledArchives = data.filter(archive => archive.memories?.[0]?.count > 0);
-  if (!filledArchives.length) {
-    archiveList.append(createEmptyState('Les capsules ouvertes des mois précédents apparaîtront ici.'));
+  if (!data.length) {
+    archiveList.append(createEmptyState('Les capsules des mois précédents apparaîtront ici après leur ouverture.'));
     return;
   }
-  for (const archive of filledArchives) {
+  for (const archive of data) {
     const button = document.createElement('button');
     button.className = 'archive-item';
     button.type = 'button';
     button.dataset.capsuleId = archive.id;
-    button.innerHTML = `<span class="archive-icon" aria-hidden="true">♡</span><span>${formatMonth(archive.month)}</span><span class="archive-arrow" aria-hidden="true">↗</span>`;
+    const icon = document.createElement('span');
+    icon.className = 'archive-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '♡';
+    const label = document.createElement('span');
+    label.textContent = formatMonth(archive.month);
+    const arrow = document.createElement('span');
+    arrow.className = 'archive-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = '↗';
+    button.append(icon, label, arrow);
     archiveList.append(button);
   }
 }
@@ -303,7 +317,7 @@ async function openArchive(event) {
     .from('memories')
     .select('id, capsule_id, author_id, note, photo_path, created_at')
     .eq('capsule_id', button.dataset.capsuleId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
   if (error) {
     showToast(`Impossible d’ouvrir cette archive : ${error.message}`, 'error');
     return;
@@ -312,14 +326,21 @@ async function openArchive(event) {
   archiveContent.replaceChildren();
   const heading = document.createElement('h3');
   heading.textContent = monthLabel;
-  archiveContent.append(heading);
-  await renderMemoryCards(archiveContent, data);
+  const downloadButton = document.createElement('button');
+  downloadButton.className = 'button button-secondary archive-download';
+  downloadButton.type = 'button';
+  downloadButton.dataset.downloadCapsule = button.dataset.capsuleId;
+  downloadButton.textContent = 'Télécharger ce récapitulatif';
+  const memoriesGrid = document.createElement('div');
+  memoriesGrid.className = 'memory-grid';
+  archiveContent.append(heading, downloadButton, memoriesGrid);
+  await renderMemoryCards(memoriesGrid, data);
 }
 
 async function renderMemoryCards(container, memories) {
   container.replaceChildren();
   if (!memories.length) {
-    container.append(createEmptyState('Pas encore de souvenir ici. Le premier peut être à toi.'));
+    container.append(createEmptyState('Cette capsule ne contient aucun souvenir.'));
     return;
   }
 
@@ -359,6 +380,139 @@ async function renderMemoryCards(container, memories) {
   }
 }
 
+    async function openCurrentCapsule() {
+      const button = document.querySelector('#open-capsule-button');
+      button.disabled = true;
+      try {
+        const { error } = await supabase.rpc('open_capsule', {
+          p_capsule_id: capsule.id,
+        });
+        if (error) throw error;
+        await loadWorkspace();
+        showToast('La lettre est ouverte. Vos souvenirs sont réunis.');
+      } catch (error) {
+        showToast(`Impossible d’ouvrir la capsule : ${error.message}`, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function startNextCapsule() {
+      const button = document.querySelector('#start-next-capsule-button');
+      button.disabled = true;
+      try {
+        const { error } = await supabase.rpc('start_next_capsule', {
+          p_capsule_id: capsule.id,
+        });
+        if (error) throw error;
+        await loadWorkspace();
+        showToast('La prochaine capsule est prête à accueillir vos souvenirs.');
+      } catch (error) {
+        showToast(`Impossible de relancer la capsule : ${error.message}`, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function downloadCapsule(capsuleId) {
+      try {
+        const { data: capsuleRow, error: capsuleError } = await supabase
+          .from('capsules')
+          .select('month, opened_at')
+          .eq('id', capsuleId)
+          .single();
+        if (capsuleError) throw capsuleError;
+        if (!capsuleRow.opened_at) throw new Error('Cette capsule doit être ouverte avant son téléchargement.');
+
+        const { data: memories, error: memoriesError } = await supabase
+          .from('memories')
+          .select('author_id, note, photo_path, created_at')
+          .eq('capsule_id', capsuleId)
+          .order('created_at', { ascending: true });
+        if (memoriesError) throw memoriesError;
+
+        const authorCounts = new Map(coupleMembers.map(person => [person.user_id, 0]));
+        let photoCount = 0;
+        const entries = [];
+        for (const memory of memories) {
+          authorCounts.set(memory.author_id, (authorCounts.get(memory.author_id) || 0) + 1);
+          let photo = '';
+          if (memory.photo_path) {
+            const { data: signedUrl, error: urlError } = await supabase.storage
+              .from('capsule-photos')
+              .createSignedUrl(memory.photo_path, 3600);
+            if (urlError) throw urlError;
+            const response = await fetch(signedUrl.signedUrl);
+            if (!response.ok) throw new Error(`Impossible de télécharger une photo (${response.status}).`);
+            photo = await blobToDataUrl(await response.blob());
+            photoCount += 1;
+          }
+
+          const author = coupleMembers.find(person => person.user_id === memory.author_id);
+          entries.push(`<article class="memory">
+            ${photo ? `<img src="${photo}" alt="Photo déposée par ${escapeHtml(author?.display_name || 'Nous deux')}">` : ''}
+            <p class="meta">${escapeHtml(author?.display_name || 'Nous deux')} · ${escapeHtml(formatDate(memory.created_at))}</p>
+            ${memory.note ? `<p class="note">${escapeHtml(memory.note)}</p>` : ''}
+          </article>`);
+        }
+
+        const recap = [...authorCounts]
+          .map(([userId, count]) => {
+            const author = coupleMembers.find(person => person.user_id === userId);
+            return `${author?.display_name || 'Membre'} : ${count}`;
+          })
+          .join(' · ');
+        const html = `<!doctype html>
+    <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+    <title>Amo-te — ${escapeHtml(formatMonth(capsuleRow.month))}</title>
+    <style>
+    body{max-width:760px;margin:40px auto;padding:0 20px;background:#fdfbf7;color:#39332e;font:16px/1.6 "Segoe UI",sans-serif}
+    h1,h2{font-family:Georgia,serif;font-weight:500}h1{text-transform:capitalize}
+    .recap{padding:18px;border:1px solid #e9ded1;border-radius:14px;background:#fffefa}
+    .memory{margin:24px 0;padding:12px 12px 2px;border:1px solid #e9e3da;background:#fffefa}
+    .memory img{width:100%;max-height:620px;object-fit:contain;background:#f2ebe2}
+    .meta{color:#82776e;font-size:13px}.note{font-family:cursive;font-size:22px;white-space:pre-wrap}
+    </style></head><body><h1>Notre capsule — ${escapeHtml(formatMonth(capsuleRow.month))}</h1>
+    <section class="recap"><h2>Notre petit récapitulatif</h2>
+    <p>${memories.length} souvenir${memories.length === 1 ? '' : 's'} · ${photoCount} photo${photoCount === 1 ? '' : 's'}</p>
+    <p>${escapeHtml(recap)}</p></section>
+    ${entries.join('\n')}
+    </body></html>`;
+
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `amo-te-${capsuleRow.month}.html`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('Le récapitulatif de la capsule est téléchargé.');
+      } catch (error) {
+        showToast(`Impossible de télécharger la capsule : ${error.message}`, 'error');
+      }
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener('load', () => resolve(reader.result));
+        reader.addEventListener('error', () => reject(new Error('Impossible de préparer une photo pour le téléchargement.')));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      })[character]);
+    }
+
 async function addMemory(event) {
   event.preventDefault();
   setFormMessage(memoryMessage, '');
@@ -368,6 +522,10 @@ async function addMemory(event) {
 
   let photoPath = null;
   try {
+    if (capsule.opened_at || getCurrentMonthKey(couple.timezone) !== capsule.month) {
+      throw new Error('Cette capsule n’accepte plus de nouveaux souvenirs.');
+    }
+
     const note = String(new FormData(memoryForm).get('note') || '').trim();
     const cameraPhoto = document.querySelector('#camera-photo').files[0];
     const galleryPhoto = document.querySelector('#gallery-photo').files[0];
@@ -409,7 +567,7 @@ async function addMemory(event) {
 
     memoryForm.reset();
     memoryDialog.close();
-    showToast('Ton souvenir est bien déposé. Il attendra le 25 pour être dévoilé.');
+    showToast('Ton souvenir est bien déposé. Il restera caché jusqu’à l’ouverture.');
     await renderCurrentMemories();
     if (member.role === 'admin') await renderProgress();
   } catch (error) {
@@ -575,21 +733,24 @@ function switchView(view) {
 
 function updateCountdown() {
   if (!capsule || !couple) return;
-  const now = Date.now();
-  const target = new Date(nextOpening?.opens_at || capsule.opens_at);
-  const remaining = Math.max(0, target.getTime() - now);
+  const opened = Boolean(capsule.opened_at);
+  const target = new Date(capsule.opens_at).getTime();
+  const remaining = Math.max(0, target - Date.now());
+  const ready = remaining === 0;
+  document.querySelector('#countdown-card').hidden = opened || ready;
+  document.querySelector('#letter-opening-card').hidden = opened || !ready;
+  document.querySelector('#capsule-actions').hidden = !opened;
+  if (opened || ready) {
+    clearInterval(countdownTimer);
+    countdownTimer = undefined;
+    return;
+  }
+
   document.querySelector('#count-days').textContent = String(Math.floor(remaining / 86400000)).padStart(2, '0');
   document.querySelector('#count-hours').textContent = String(Math.floor(remaining / 3600000) % 24).padStart(2, '0');
   document.querySelector('#count-minutes').textContent = String(Math.floor(remaining / 60000) % 60).padStart(2, '0');
   document.querySelector('#count-seconds').textContent = String(Math.floor(remaining / 1000) % 60).padStart(2, '0');
-  document.querySelector('#countdown-label').textContent = 'Prochaine ouverture dans';
-
-  if (!refreshingMonth && Date.now() >= nextMonthRefreshAt &&
-      (getCurrentMonthKey(couple.timezone) !== capsule.month || remaining === 0)) {
-    refreshingMonth = true;
-    nextMonthRefreshAt = Date.now() + 30000;
-    loadWorkspace().finally(() => { refreshingMonth = false; });
-  }
+  document.querySelector('#countdown-label').textContent = 'Notre lettre s’ouvre dans';
 }
 
 function formatMonth(month) {
@@ -662,10 +823,14 @@ async function registerServiceWorker() {
 function clearPrivateContent() {
   switchView('current');
   document.querySelector('#current-memories').replaceChildren();
+  document.querySelector('#current-memories').hidden = false;
   document.querySelector('#archive-list').replaceChildren();
   document.querySelector('#archive-content').replaceChildren();
   document.querySelector('#archive-content').hidden = true;
   document.querySelector('#capsule-progress').replaceChildren();
   document.querySelector('#hero-description').textContent = '';
   document.querySelector('#visibility-note').textContent = '';
+  document.querySelector('#countdown-card').hidden = false;
+  document.querySelector('#letter-opening-card').hidden = true;
+  document.querySelector('#capsule-actions').hidden = true;
 }
