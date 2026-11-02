@@ -270,7 +270,7 @@ async function renderCurrentMemories() {
 async function renderArchives() {
   const { data, error } = await supabase
     .from('capsules')
-    .select('id, month, opened_at')
+    .select('id, month, opened_at, memories(count)')
     .eq('couple_id', member.couple_id)
     .not('opened_at', 'is', null)
     .neq('id', capsule.id)
@@ -283,11 +283,12 @@ async function renderArchives() {
   const archiveList = document.querySelector('#archive-list');
   archiveList.replaceChildren();
   document.querySelector('#archive-content').hidden = true;
-  if (!data.length) {
+  const filledArchives = data.filter(archive => archive.memories?.[0]?.count > 0);
+  if (!filledArchives.length) {
     archiveList.append(createEmptyState('Les capsules des mois précédents apparaîtront ici après leur ouverture.'));
     return;
   }
-  for (const archive of data) {
+  for (const archive of filledArchives) {
     const button = document.createElement('button');
     button.className = 'archive-item';
     button.type = 'button';
