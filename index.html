@@ -129,12 +129,25 @@
                 <div id="capsule-progress" class="progress-list"></div>
               </article>
               <article class="paper-card admin-card">
-                <span class="card-kicker">Un doux rappel</span>
-                <h3>Envoyer un rappel</h3>
-                <p>Les appareils qui ont activé les notifications recevront un petit mot pour penser à la capsule.</p>
-                <div class="admin-actions">
-                  <button id="send-reminder-button" class="button button-primary" type="button">Envoyer un rappel</button>
-                </div>
+                <span class="card-kicker">Un mot de ta part</span>
+                <h3>Personnaliser une notification</h3>
+                <p>Compose le titre et le message, choisis les appareils d’Ana et/ou les tiens, puis envoie.</p>
+                <form id="push-message-form" class="push-message-form">
+                  <fieldset class="push-recipients">
+                    <legend>Destinataires</legend>
+                    <label><input type="checkbox" name="recipients" value="partner" checked> Ana</label>
+                    <label><input type="checkbox" name="recipients" value="admin" checked> Enzo</label>
+                  </fieldset>
+                  <label for="push-title">Titre</label>
+                  <input id="push-title" name="title" maxlength="60" value="Un petit mot pour toi" required>
+                  <label for="push-body">Message</label>
+                  <textarea id="push-body" name="body" rows="3" maxlength="240" required>J’ai pensé à toi. Viens déposer un souvenir dans notre capsule 💌</textarea>
+                  <label for="push-url">Lien à ouvrir</label>
+                  <input id="push-url" name="url" type="text" maxlength="1024" value="/" placeholder="/" required>
+                  <p class="input-hint">Utilise un chemin interne commençant par /, par exemple /.</p>
+                  <button id="send-reminder-button" class="button button-primary" type="submit">Envoyer la notification</button>
+                  <p id="push-message-status" class="form-message" role="status" aria-live="polite"></p>
+                </form>
               </article>
             </div>
           </section>

@@ -622,6 +622,66 @@ main {
   line-height: 1.6;
 }
 
+.push-message-form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 16px;
+}
+
+.push-message-form > label,
+.push-recipients legend {
+  margin: 14px 0 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.push-message-form > input,
+.push-message-form > textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fffefa;
+  color: var(--ink);
+}
+
+.push-message-form > textarea {
+  min-height: 88px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.push-recipients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.push-recipients legend {
+  padding: 0;
+}
+
+.push-recipients label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+
+.push-recipients input {
+  accent-color: var(--rose);
+}
+
+.push-message-form > .button {
+  align-self: flex-start;
+  margin-top: 15px;
+}
+
 .progress-list {
   margin-top: 20px;
 }

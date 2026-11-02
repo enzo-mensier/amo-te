@@ -147,8 +147,8 @@ Dans le secret `ALLOWED_ORIGINS` de la fonction, autorise l’adresse locale `ht
 
 Les notifications sont facultatives. Elles nécessitent HTTPS en production, un navigateur compatible et une autorisation explicite sur chaque appareil à notifier. Sur iPhone/iPad, le site doit être ajouté à l’écran d’accueil et les notifications Web sont prises en charge sur les versions compatibles d’iOS/iPadOS.
 
-1. Génère une paire de clés VAPID, par exemple avec `npx web-push generate-vapid-keys`.
-2. Mets la clé publique dans `VITE_VAPID_PUBLIC_KEY` (local et Vercel).
+1. Génère une paire de clés VAPID, par exemple avec `npx web-push generate-vapid-keys`. Garde la clé privée secrète.
+2. Mets la clé publique dans `VITE_VAPID_PUBLIC_KEY` (local et Netlify). Pour ce projet, la clé publique est déjà intégrée au frontend et cette variable reste facultative ; seule la clé privée reste un secret.
 3. Lie la CLI Supabase au projet et déploie la fonction :
 
    ```powershell
@@ -160,10 +160,10 @@ Les notifications sont facultatives. Elles nécessitent HTTPS en production, un 
 4. Configure les secrets **sur Supabase**, jamais dans le frontend :
 
    ```powershell
-   supabase secrets set VAPID_PUBLIC_KEY="..." VAPID_PRIVATE_KEY="..." VAPID_SUBJECT="mailto:ton-adresse@example.com" COUPLE_ID="UUID_DU_COUPLE"
+   supabase secrets set VAPID_PUBLIC_KEY="..." VAPID_PRIVATE_KEY="..." VAPID_SUBJECT="mailto:ton-adresse@example.com" COUPLE_ID="UUID_DU_COUPLE" ALLOWED_ORIGINS="https://amo-te-ana.netlify.app,http://localhost:5173"
    ```
 
-   L’environnement de la fonction fournit les variables Supabase du projet. La clé privée VAPID et la clé `service_role` ne doivent jamais être exposées au navigateur. Chaque membre active les rappels sur son appareil ; l’admin peut ensuite envoyer un rappel manuel aux appareils inscrits. Il ne s’agit pas d’un envoi automatique programmé.
+   L’environnement de la fonction fournit les variables Supabase du projet. La clé privée VAPID et la clé `service_role` ne doivent jamais être exposées au navigateur. Chaque membre active les notifications sur chacun de ses appareils. Dans Administration, Enzo peut personnaliser le titre (60 caractères), le message (240 caractères) et le chemin interne à ouvrir, puis choisir Ana, Enzo, ou les deux comme destinataires. Seuls les appareils inscrits de chaque destinataire recevront le message ; le résultat indique le nombre d’appareils inscrits, les envois réussis et les échecs. Il ne s’agit pas d’un envoi automatique programmé.
 
 ## Déploiement sur Vercel
 
@@ -179,7 +179,7 @@ Les notifications sont facultatives. Elles nécessitent HTTPS en production, un 
 4. Configure l’origine de production dans le secret `ALLOWED_ORIGINS` de la fonction `login-with-code`, puis ajoute l’URL Vercel aux URL autorisées de Supabase si tu utilises des liens de récupération.
 5. Redéploie la fonction Edge après son installation et redéploie le site.
 
-La migration SQL et la fonction `send-reminder` sont déployées sur Supabase ; elles ne sont pas exécutées par le build Vercel.
+La migration SQL et les fonctions `send-reminder` et `login-with-code` sont déployées sur Supabase ; elles ne sont pas exécutées par le build Netlify.
 
 ## Comptes et confidentialité
 

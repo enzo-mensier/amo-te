@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { getCurrentMonthKey } from './date-utils.js';
+import { normalizePushMessage } from './push-utils.js';
 
 const config = import.meta.env;
+const vapidPublicKey = config.VITE_VAPID_PUBLIC_KEY ||
+  'BMEVAjRTPk6w8sIV_Q_YF8y4zZRh0UGEjaxWk0p21EjcMNUMVFiBGULanPikOicZ7jtTrZV1se3X49gbKA41Nro';
 const requiredConfig = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_COUPLE_ID'];
 const missingConfig = requiredConfig.filter(key => !config[key]);
 const setupScreen = document.querySelector('#setup-screen');
@@ -57,7 +60,7 @@ async function start() {
     button.addEventListener('click', () => switchView(button.dataset.view));
   });
   document.querySelector('#enable-push-button').addEventListener('click', enablePush);
-  document.querySelector('#send-reminder-button').addEventListener('click', sendReminder);
+  document.querySelector('#push-message-form').addEventListener('submit', sendReminder);
   document.querySelector('#archive-list').addEventListener('click', openArchive);
   serviceWorkerRegistration = await registerServiceWorker();
 
@@ -461,10 +464,6 @@ async function enablePush() {
     showToast('Les notifications push ne sont pas disponibles dans ce navigateur.', 'error');
     return;
   }
-  if (!config.VITE_VAPID_PUBLIC_KEY) {
-    showToast('La clé VAPID publique manque à la configuration Vercel.', 'error');
-    return;
-  }
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
@@ -476,7 +475,7 @@ async function enablePush() {
     const existingSubscription = await registration.pushManager.getSubscription();
     const subscription = existingSubscription || await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: decodeVapidKey(config.VITE_VAPID_PUBLIC_KEY),
+      applicationServerKey: decodeVapidKey(vapidPublicKey),
     });
     const json = subscription.toJSON();
     if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
@@ -504,11 +503,9 @@ async function enablePush() {
 
 async function updatePushButton() {
   const button = document.querySelector('#enable-push-button');
-  if (!serviceWorkerRegistration || !('PushManager' in window) || !config.VITE_VAPID_PUBLIC_KEY) {
+  if (!serviceWorkerRegistration || !('PushManager' in window)) {
     button.disabled = true;
-    button.textContent = !serviceWorkerRegistration || !config.VITE_VAPID_PUBLIC_KEY
-      ? 'Configurer les notifications'
-      : 'Notifications indisponibles';
+    button.textContent = 'Notifications indisponibles';
     return;
   }
   try {
@@ -537,20 +534,49 @@ async function updatePushButton() {
   }
 }
 
-async function sendReminder() {
-  const button = document.querySelector('#send-reminder-button');
+async function sendReminder(event) {
+  event.preventDefault();
+  const form = document.querySelector('#push-message-form');
+  const button = form.querySelector('button[type="submit"]');
+  const status = document.querySelector('#push-message-status');
+  setFormMessage(status, '');
+  const formData = new FormData(form);
+  let notification;
+
+  try {
+    notification = normalizePushMessage({
+      title: formData.get('title'),
+      body: formData.get('body'),
+      url: formData.get('url'),
+      recipients: formData.getAll('recipients'),
+    });
+  } catch (error) {
+    setFormMessage(status, error.message, true);
+    return;
+  }
+
   button.disabled = true;
-  const { data, error } = await supabase.functions.invoke('send-reminder', { body: {} });
-  button.disabled = false;
-  if (error) {
-    showToast(`L’envoi du rappel a échoué : ${error.message}`, 'error');
-    return;
+  button.textContent = 'Envoi en cours…';
+  try {
+    const { data, error } = await supabase.functions.invoke('send-reminder', {
+      body: notification,
+    });
+    if (error) {
+      setFormMessage(status, `La notification n’a pas pu être envoyée : ${error.message}`, true);
+      return;
+    }
+
+    const details = data.results
+      .map(result => `${result.display_name} : ${result.sent} reçu${result.sent === 1 ? '' : 's'}${result.deviceCount === 0 ? ', aucun appareil inscrit' : ''}${result.failed ? `, ${result.failed} échec(s)` : ''}`)
+      .join(' · ');
+    const message = `${data.sent} notification(s) envoyée(s). ${details}`;
+    setFormMessage(status, message, data.failed > 0 || data.sent === 0);
+  } catch (error) {
+    setFormMessage(status, `Le service de notification est indisponible : ${error.message}`, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Envoyer la notification';
   }
-  if (data.failed) {
-    showToast(`Rappel envoyé à ${data.sent} appareil(s), échec pour ${data.failed}.`, 'error');
-    return;
-  }
-  showToast(`Rappel envoyé à ${data.sent} appareil(s).`);
 }
 
 function switchView(view) {
