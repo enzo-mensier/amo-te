@@ -676,6 +676,7 @@ async function registerServiceWorker() {
 }
 
 function clearPrivateContent() {
+  switchView('current');
   document.querySelector('#current-memories').replaceChildren();
   document.querySelector('#archive-list').replaceChildren();
   document.querySelector('#archive-content').replaceChildren();
