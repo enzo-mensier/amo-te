@@ -366,75 +366,59 @@ async function addMemory(event) {
   button.disabled = true;
   button.textContent = 'Dépôt en cours…';
 
-  const note = String(new FormData(memoryForm).get('note') || '').trim();
-  const cameraPhoto = document.querySelector('#camera-photo').files[0];
-  const galleryPhoto = document.querySelector('#gallery-photo').files[0];
-  const photo = cameraPhoto || galleryPhoto;
-
-  if (!note && !photo) {
-    setFormMessage(memoryMessage, 'Ajoute une note, une photo, ou les deux.', true);
-    finishMemorySubmit(button);
-    return;
-  }
-  if (cameraPhoto && galleryPhoto) {
-    setFormMessage(memoryMessage, 'Choisis une seule photo à déposer.', true);
-    finishMemorySubmit(button);
-    return;
-  }
-  if (photo && !['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) {
-    setFormMessage(memoryMessage, 'Le format doit être JPEG, PNG ou WebP.', true);
-    finishMemorySubmit(button);
-    return;
-  }
-  if (photo && photo.size > 10 * 1024 * 1024) {
-    setFormMessage(memoryMessage, 'La photo dépasse la limite de 10 Mo.', true);
-    finishMemorySubmit(button);
-    return;
-  }
-
   let photoPath = null;
-  if (photo) {
-    const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[photo.type];
-    photoPath = `${member.couple_id}/${capsule.id}/${member.user_id}/${crypto.randomUUID()}.${extension}`;
-    const { error } = await supabase.storage.from('capsule-photos').upload(photoPath, photo, {
-      contentType: photo.type,
-      upsert: false,
+  try {
+    const note = String(new FormData(memoryForm).get('note') || '').trim();
+    const cameraPhoto = document.querySelector('#camera-photo').files[0];
+    const galleryPhoto = document.querySelector('#gallery-photo').files[0];
+    const photo = cameraPhoto || galleryPhoto;
+
+    if (!note && !photo) throw new Error('Ajoute une note, une photo, ou les deux.');
+    if (cameraPhoto && galleryPhoto) throw new Error('Choisis une seule photo à déposer.');
+    if (photo && !['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) {
+      throw new Error('Le format doit être JPEG, PNG ou WebP.');
+    }
+    if (photo && photo.size > 10 * 1024 * 1024) {
+      throw new Error('La photo dépasse la limite de 10 Mo.');
+    }
+
+    if (photo) {
+      const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[photo.type];
+      photoPath = `${member.couple_id}/${capsule.id}/${member.user_id}/${crypto.randomUUID()}.${extension}`;
+      const { error } = await supabase.storage.from('capsule-photos').upload(photoPath, photo, {
+        contentType: photo.type,
+        upsert: false,
+      });
+      if (error) throw new Error(`La photo n’a pas pu être téléversée : ${error.message}`);
+    }
+
+    const { error } = await supabase.from('memories').insert({
+      capsule_id: capsule.id,
+      author_id: member.user_id,
+      note,
+      photo_path: photoPath,
     });
     if (error) {
-      setFormMessage(memoryMessage, `La photo n’a pas pu être téléversée : ${error.message}`, true);
-      finishMemorySubmit(button);
-      return;
+      let message = `Le souvenir n’a pas pu être enregistré : ${error.message}`;
+      if (photoPath) {
+        const { error: cleanupError } = await supabase.storage.from('capsule-photos').remove([photoPath]);
+        if (cleanupError) message += ` Le fichier temporaire n’a pas pu être supprimé : ${cleanupError.message}`;
+      }
+      throw new Error(message);
     }
-  }
 
-  const { error } = await supabase.from('memories').insert({
-    capsule_id: capsule.id,
-    author_id: member.user_id,
-    note,
-    photo_path: photoPath,
-  });
-  if (error) {
-    let message = `Le souvenir n’a pas pu être enregistré : ${error.message}`;
-    if (photoPath) {
-      const { error: cleanupError } = await supabase.storage.from('capsule-photos').remove([photoPath]);
-      if (cleanupError) message += ` Le fichier temporaire n’a pas pu être supprimé : ${cleanupError.message}`;
-    }
+    memoryForm.reset();
+    memoryDialog.close();
+    showToast('Ton souvenir est bien déposé. Il attendra le 25 pour être dévoilé.');
+    await renderCurrentMemories();
+    if (member.role === 'admin') await renderProgress();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     setFormMessage(memoryMessage, message, true);
-    finishMemorySubmit(button);
-    return;
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Déposer dans la capsule';
   }
-
-  memoryForm.reset();
-  memoryDialog.close();
-  finishMemorySubmit(button);
-  showToast('Ton souvenir est bien déposé. Il attendra le 25 pour être dévoilé.');
-  await renderCurrentMemories();
-  if (member.role === 'admin') await renderProgress();
-}
-
-function finishMemorySubmit(button) {
-  button.disabled = false;
-  button.textContent = 'Déposer dans la capsule';
 }
 
 async function renderProgress() {
