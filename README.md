@@ -74,8 +74,9 @@ Pour un nouveau projet Supabase, exécute les migrations dans l’ordre chronolo
 2. `supabase/migrations/20261030100000_fix_storage_object_name_policy.sql`
 3. `supabase/migrations/20261031100000_login_code_rate_limits.sql`
 4. `supabase/migrations/20261102110000_capsule_opening_cycle.sql`
+5. `supabase/migrations/20261108100000_login_pins.sql`
 
-Elles créent les tables, les fonctions SQL, les règles RLS et Storage, le bucket privé `capsule-photos`, le limiteur d’essais de connexion et le cycle d’ouverture/redémarrage des capsules. Sur un projet déjà initialisé, n’exécute pas de nouveau la migration initiale : vérifie quelles migrations ont déjà été appliquées et applique seulement les migrations manquantes, dans l’ordre.
+Elles créent les tables, les fonctions SQL, les règles RLS et Storage, le bucket privé `capsule-photos`, le limiteur d’essais de connexion, le cycle d’ouverture/redémarrage des capsules et le stockage privé des PIN hashés. Sur un projet déjà initialisé, n’exécute pas de nouveau la migration initiale : vérifie quelles migrations ont déjà été appliquées et applique seulement les migrations manquantes, dans l’ordre.
 
 Pour un nouveau couple :
 
@@ -87,13 +88,16 @@ Le script de seed crée un **nouveau couple**. Ne le relance pas pour un couple 
 
 ### Connexion par code
 
-La fonction `login-with-code` vérifie le code côté serveur, applique une limite de cinq tentatives par profil et adresse IP sur quinze minutes, puis crée une session Supabase Auth. Les codes ne doivent être stockés ni dans le frontend, ni dans `.env.local`, ni dans GitHub.
+La fonction `login-with-code` vérifie le PIN côté serveur, applique une limite de cinq tentatives par profil et adresse IP sur quinze minutes, puis crée une session Supabase Auth. Au premier login réussi après la migration, le PIN legacy est converti en HMAC avec un secret serveur et son hash est enregistré dans `login_pins`. Les PIN ne doivent être stockés ni dans le frontend, ni dans `.env.local`, ni dans GitHub.
+
+Un utilisateur connecté peut modifier son PIN depuis **Changer mon PIN**. Le serveur vérifie la session, l’appartenance au couple et le PIN actuel; les tentatives sont limitées avec le même quota de cinq essais sur quinze minutes.
 
 Configure les secrets suivants dans **Supabase → Edge Functions → Secrets** :
 
 - `COUPLE_ID` : UUID du couple ;
 - `ADMIN_USER_ID` et `PARTNER_USER_ID` : UUID des utilisateurs Supabase Auth ;
 - `ADMIN_LOGIN_CODE` et `PARTNER_LOGIN_CODE` : codes distincts de quatre chiffres ;
+- `PIN_HASH_SECRET` : secret aléatoire d’au moins 32 octets utilisé pour protéger les hash HMAC des PIN ;
 - `ALLOWED_ORIGINS` : origines autorisées séparées par des virgules, par exemple `https://TON_SITE.netlify.app,http://localhost:5173`.
 
 Les variables `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` sont fournies à la fonction par Supabase. Ne les recopie jamais dans le frontend ; la clé `service_role` doit rester secrète.
@@ -104,7 +108,10 @@ Déploie la fonction avec la vérification JWT désactivée, car l’utilisateur
 supabase login
 supabase link --project-ref ID_DU_PROJET
 supabase functions deploy login-with-code --no-verify-jwt
+supabase functions deploy change-pin
 ```
+
+Applique d’abord la migration `20261108100000_login_pins.sql`, configure `PIN_HASH_SECRET`, puis redéploie `login-with-code` et déploie `change-pin`. Les PIN existants continuent de fonctionner via les anciens secrets jusqu’au premier login réussi de chaque membre; après leur migration, ces secrets peuvent être retirés.
 
 ## Déploiement sur Netlify
 
@@ -192,6 +199,7 @@ tests/                             Tests Node.js
 public/                            Icônes, manifeste PWA et service worker
 supabase/migrations/               Schéma, RLS, Storage et limiteur
 supabase/functions/login-with-code/ Authentification par code
+supabase/functions/change-pin/      Changement de PIN authentifié
 supabase/functions/send-reminder/  Envoi Web Push réservé à l’admin
 supabase/seed.example.sql          Exemple de création d’un couple et de ses membres
 ```

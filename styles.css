@@ -176,6 +176,7 @@ main {
 
 .auth-card input,
 .memory-form textarea,
+.memory-form input[type='password'],
 .memory-form input[type='file'] {
   width: 100%;
   border: 1px solid var(--line);
@@ -843,6 +844,11 @@ main {
   min-height: 95px;
   padding: 12px;
   line-height: 1.5;
+}
+
+.memory-form input[type='password'] {
+  min-height: 46px;
+  padding: 0 13px;
 }
 
 .memory-form input[type='file'] {

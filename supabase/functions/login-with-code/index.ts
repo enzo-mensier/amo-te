@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { constantTimeEqual, hashPin } from "../_shared/pin-utils.js";
 
 const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
   .split(",")
@@ -17,15 +18,6 @@ function response(body: unknown, status: number, origin: string) {
       "Vary": "Origin",
     },
   });
-}
-
-function constantTimeEqual(left: string, right: string) {
-  let difference = left.length ^ right.length;
-  const length = Math.max(left.length, right.length);
-  for (let index = 0; index < length; index += 1) {
-    difference |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0);
-  }
-  return difference === 0;
 }
 
 async function hash(value: string) {
@@ -61,11 +53,12 @@ Deno.serve(async request => {
   const coupleId = Deno.env.get("COUPLE_ID");
   const adminUserId = Deno.env.get("ADMIN_USER_ID");
   const partnerUserId = Deno.env.get("PARTNER_USER_ID");
+    const pinHashSecret = Deno.env.get("PIN_HASH_SECRET");
   const adminCode = Deno.env.get("ADMIN_LOGIN_CODE");
   const partnerCode = Deno.env.get("PARTNER_LOGIN_CODE");
 
   if (!supabaseUrl || !anonKey || !serviceRoleKey || !coupleId ||
-      !adminUserId || !partnerUserId || !adminCode || !partnerCode) {
+      !adminUserId || !partnerUserId || !pinHashSecret) {
     console.error("One or more login-with-code secrets are missing.");
     return response({ error: "The login service is not configured." }, 500, origin);
   }
@@ -105,11 +98,38 @@ Deno.serve(async request => {
     return response({ error: "Too many attempts. Try again in 15 minutes." }, 429, origin);
   }
 
-  const expectedCode = profile === "admin" ? adminCode : partnerCode;
   const userId = profile === "admin" ? adminUserId : partnerUserId;
   const expectedRole = profile;
-  if (!/^\d{4}$/.test(expectedCode) || !constantTimeEqual(body.code, expectedCode)) {
-    return response({ error: "Invalid code or profile." }, 401, origin);
+  const { data: pinRecord, error: pinReadError } = await adminClient
+    .from("login_pins")
+    .select("pin_hash")
+    .eq("couple_id", coupleId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (pinReadError) {
+    console.error("Unable to load the login PIN:", pinReadError.message);
+    return response({ error: "The login service is temporarily unavailable." }, 503, origin);
+  }
+
+  const submittedPinHash = await hashPin(body.code, pinHashSecret);
+  if (pinRecord) {
+    if (!constantTimeEqual(submittedPinHash, pinRecord.pin_hash)) {
+      return response({ error: "Invalid code or profile." }, 401, origin);
+    }
+  } else {
+    const legacyCode = profile === "admin" ? adminCode : partnerCode;
+    if (!legacyCode || !/^\d{4}$/.test(legacyCode) || !constantTimeEqual(body.code, legacyCode)) {
+      return response({ error: "Invalid code or profile." }, 401, origin);
+    }
+    const { error: pinSaveError } = await adminClient
+      .from("login_pins")
+      .upsert({ couple_id: coupleId, user_id: userId, pin_hash: submittedPinHash }, {
+        onConflict: "couple_id,user_id",
+      });
+    if (pinSaveError) {
+      console.error("Unable to migrate the login PIN:", pinSaveError.message);
+      return response({ error: "The login service is temporarily unavailable." }, 503, origin);
+    }
   }
 
   const [{ data: userResult, error: userError }, { data: membership, error: membershipError }] =

@@ -3,3 +3,6 @@ verify_jwt = true
 
 [functions.login-with-code]
 verify_jwt = false
+
+[functions.change-pin]
+verify_jwt = true

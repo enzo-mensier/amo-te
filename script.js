@@ -16,6 +16,9 @@ const authMessage = document.querySelector('#auth-message');
 const memoryDialog = document.querySelector('#memory-dialog');
 const memoryForm = document.querySelector('#memory-form');
 const memoryMessage = document.querySelector('#memory-message');
+const changePinDialog = document.querySelector('#change-pin-dialog');
+const changePinForm = document.querySelector('#change-pin-form');
+const changePinMessage = document.querySelector('#change-pin-message');
 const toast = document.querySelector('#toast');
 
 let supabase;
@@ -50,12 +53,18 @@ if (document.readyState === 'loading') {
 async function start() {
   loginForm.addEventListener('submit', signIn);
   document.querySelector('#sign-out-button').addEventListener('click', signOut);
+  document.querySelector('#change-pin-button').addEventListener('click', () => {
+    setFormMessage(changePinMessage, '');
+    changePinDialog.showModal();
+  });
+  document.querySelector('#close-change-pin-dialog').addEventListener('click', () => changePinDialog.close());
   document.querySelector('#add-memory-button').addEventListener('click', () => memoryDialog.showModal());
   document.querySelector('#close-dialog-button').addEventListener('click', () => memoryDialog.close());
   document.querySelector('#open-capsule-button').addEventListener('click', openCurrentCapsule);
   document.querySelector('#download-capsule-button').addEventListener('click', () => downloadCapsule(capsule.id));
   document.querySelector('#start-next-capsule-button').addEventListener('click', startNextCapsule);
   memoryForm.addEventListener('submit', addMemory);
+  changePinForm.addEventListener('submit', changePin);
   document.querySelectorAll('.tab-button').forEach(button => {
     button.addEventListener('click', () => switchView(button.dataset.view));
   });
@@ -118,6 +127,39 @@ async function signIn(event) {
   } finally {
     button.disabled = false;
     button.textContent = 'Entrer dans notre capsule';
+  }
+}
+
+async function changePin(event) {
+  event.preventDefault();
+  setFormMessage(changePinMessage, '');
+  const formData = new FormData(changePinForm);
+  const currentPin = String(formData.get('currentPin') || '');
+  const newPin = String(formData.get('newPin') || '');
+  const confirmPin = String(formData.get('confirmPin') || '');
+  if (newPin !== confirmPin) {
+    setFormMessage(changePinMessage, 'Les deux nouveaux PIN ne correspondent pas.', true);
+    return;
+  }
+  if (newPin === currentPin) {
+    setFormMessage(changePinMessage, 'Choisis un PIN différent de l’actuel.', true);
+    return;
+  }
+
+  const button = changePinForm.querySelector('button[type="submit"]');
+  button.disabled = true;
+  try {
+    const { error } = await supabase.functions.invoke('change-pin', {
+      body: { currentPin, newPin },
+    });
+    if (error) throw error;
+    changePinForm.reset();
+    changePinDialog.close();
+    showToast('Ton PIN a été modifié.');
+  } catch (error) {
+    setFormMessage(changePinMessage, `Impossible de modifier le PIN : ${error.message}`, true);
+  } finally {
+    button.disabled = false;
   }
 }
 

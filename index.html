@@ -24,6 +24,7 @@
         </a>
         <div id="account-area" class="account-area" hidden>
           <span id="account-name" class="account-name"></span>
+          <button id="change-pin-button" class="button button-quiet" type="button">Changer mon PIN</button>
           <button id="sign-out-button" class="button button-quiet" type="button">Déconnexion</button>
         </div>
       </header>
@@ -54,7 +55,7 @@
             <button class="button button-primary button-wide" type="submit">Entrer dans notre capsule</button>
             <p id="auth-message" class="form-message" role="status"></p>
           </form>
-          <p class="auth-help">Choisis un code différent de celui de l’autre compte. En cas d’oubli, l’admin peut en définir un nouveau dans les secrets Supabase.</p>
+          <p class="auth-help">Choisis un code différent de celui de l’autre compte. En cas d’oubli, contacte l’administrateur du projet Supabase.</p>
         </section>
 
         <section id="app-screen" hidden>
@@ -183,6 +184,23 @@
         <p class="input-hint">Image JPEG, PNG ou WebP, 10 Mo maximum.</p>
         <button class="button button-primary button-wide" type="submit">Déposer dans la capsule</button>
         <p id="memory-message" class="form-message" role="status"></p>
+      </form>
+    </dialog>
+
+    <dialog id="change-pin-dialog" class="memory-dialog">
+      <form id="change-pin-form" class="paper-card memory-form">
+        <button id="close-change-pin-dialog" class="dialog-close" type="button" aria-label="Fermer">×</button>
+        <span class="eyebrow">Sécurité du compte</span>
+        <h2>Changer mon PIN</h2>
+        <label for="current-pin">PIN actuel</label>
+        <input id="current-pin" name="currentPin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" required>
+        <label for="new-pin">Nouveau PIN</label>
+        <input id="new-pin" name="newPin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required>
+        <label for="confirm-pin">Confirmer le nouveau PIN</label>
+        <input id="confirm-pin" name="confirmPin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required>
+        <p class="input-hint">Le PIN doit contenir exactement quatre chiffres.</p>
+        <button class="button button-primary button-wide" type="submit">Enregistrer le nouveau PIN</button>
+        <p id="change-pin-message" class="form-message" role="status" aria-live="polite"></p>
       </form>
     </dialog>
 
