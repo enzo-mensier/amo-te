@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getCurrentMonthKey } from './date-utils.js';
+import { getAnniversaryMonthNumber, getCurrentMonthKey } from './date-utils.js';
 import { normalizePushMessage } from './push-utils.js';
 
 const config = import.meta.env;
@@ -220,7 +220,8 @@ async function loadWorkspace() {
       : 'Gardons nos photos et nos mots doux ici. Le 25, la lettre sera prête à être ouverte.';
   document.querySelector('#account-name').textContent = member.display_name;
   document.querySelector('#admin-tab').hidden = member.role !== 'admin';
-  document.querySelector('#current-month-title').textContent = formatMonth(capsule.month);
+  document.querySelector('#current-month-title').textContent =
+    `${formatMonth(capsule.month)} · ${formatCoupleMonth(capsule.month)}`;
   await renderCurrentMemories();
   await renderArchives();
   if (member.role === 'admin') await renderProgress();
@@ -283,12 +284,11 @@ async function renderArchives() {
   const archiveList = document.querySelector('#archive-list');
   archiveList.replaceChildren();
   document.querySelector('#archive-content').hidden = true;
-  const filledArchives = data.filter(archive => archive.memories?.[0]?.count > 0);
-  if (!filledArchives.length) {
+  if (!data.length) {
     archiveList.append(createEmptyState('Les capsules des mois précédents apparaîtront ici après leur ouverture.'));
     return;
   }
-  for (const archive of filledArchives) {
+  for (const archive of data) {
     const button = document.createElement('button');
     button.className = 'archive-item';
     button.type = 'button';
@@ -298,7 +298,7 @@ async function renderArchives() {
     icon.setAttribute('aria-hidden', 'true');
     icon.textContent = '♡';
     const label = document.createElement('span');
-    label.textContent = formatMonth(archive.month);
+    label.textContent = `${formatMonth(archive.month)} · ${formatCoupleMonth(archive.month)}`;
     const arrow = document.createElement('span');
     arrow.className = 'archive-arrow';
     arrow.setAttribute('aria-hidden', 'true');
@@ -760,6 +760,11 @@ function formatMonth(month) {
     year: 'numeric',
     timeZone: couple?.timezone || 'Europe/Paris',
   }).format(new Date(`${month}T12:00:00Z`));
+}
+
+function formatCoupleMonth(month) {
+  const monthNumber = getAnniversaryMonthNumber(month);
+  return monthNumber === 0 ? 'Mois anniversaire' : `Mois ${monthNumber}`;
 }
 
 function formatDate(value) {

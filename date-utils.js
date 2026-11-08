@@ -32,6 +32,12 @@ export function getCurrentMonthKey(timezone, now = new Date()) {
   return `${year}-${month}-01`;
 }
 
+export function getAnniversaryMonthNumber(month, anniversaryMonth = '2026-07-01') {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const [anniversaryYear, anniversaryMonthNumber] = anniversaryMonth.split('-').map(Number);
+  return (year - anniversaryYear) * 12 + monthNumber - anniversaryMonthNumber;
+}
+
 function wallTimeToUtc(year, month, day, timezone) {
   let timestamp = Date.UTC(year, month - 1, day);
   const formatter = new Intl.DateTimeFormat('en-GB', {
