@@ -1,22 +1,11 @@
 alter table public.capsules
 add column if not exists opened_at timestamptz;
 
-update public.capsules
-set opened_at = opens_at
-where opens_at <= now();
-
 update public.capsules c
 set opens_at = ((c.month + 24)::timestamp at time zone co.timezone)
 from public.couples co
 where co.id = c.couple_id
   and c.opened_at is null;
-
-update public.capsules c
-set opened_at = c.opens_at
-from public.couples co
-where co.id = c.couple_id
-  and c.opened_at is null
-  and c.month < date_trunc('month', now() at time zone co.timezone)::date;
 
 delete from public.capsules c
 using public.couples co

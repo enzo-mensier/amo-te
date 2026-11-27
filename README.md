@@ -75,6 +75,7 @@ Pour un nouveau projet Supabase, exécute les migrations dans l’ordre chronolo
 3. `supabase/migrations/20261031100000_login_code_rate_limits.sql`
 4. `supabase/migrations/20261102110000_capsule_opening_cycle.sql`
 5. `supabase/migrations/20261108100000_login_pins.sql`
+6. `supabase/migrations/20261127100000_fix_automatic_capsule_opening.sql`
 
 Elles créent les tables, les fonctions SQL, les règles RLS et Storage, le bucket privé `capsule-photos`, le limiteur d’essais de connexion, le cycle d’ouverture/redémarrage des capsules et le stockage privé des PIN hashés. Sur un projet déjà initialisé, n’exécute pas de nouveau la migration initiale : vérifie quelles migrations ont déjà été appliquées et applique seulement les migrations manquantes, dans l’ordre.
 
