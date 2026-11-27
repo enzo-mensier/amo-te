@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getAnniversaryMonthNumber, getCurrentMonthKey } from './date-utils.js';
+import { getAnniversaryMonthNumber } from './date-utils.js';
 import { normalizePushMessage } from './push-utils.js';
 
 const config = import.meta.env;
@@ -423,138 +423,138 @@ async function renderMemoryCards(container, memories) {
   }
 }
 
-    async function openCurrentCapsule() {
-      const button = document.querySelector('#open-capsule-button');
-      button.disabled = true;
-      try {
-        const { error } = await supabase.rpc('open_capsule', {
-          p_capsule_id: capsule.id,
-        });
-        if (error) throw error;
-        await loadWorkspace();
-        showToast('La lettre est ouverte. Vos souvenirs sont réunis.');
-      } catch (error) {
-        showToast(`Impossible d’ouvrir la capsule : ${error.message}`, 'error');
-      } finally {
-        button.disabled = false;
+async function openCurrentCapsule() {
+  const button = document.querySelector('#open-capsule-button');
+  button.disabled = true;
+  try {
+    const { error } = await supabase.rpc('open_capsule', {
+      p_capsule_id: capsule.id,
+    });
+    if (error) throw error;
+    await loadWorkspace();
+    showToast('La lettre est ouverte. Vos souvenirs sont réunis.');
+  } catch (error) {
+    showToast(`Impossible d’ouvrir la capsule : ${error.message}`, 'error');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function startNextCapsule() {
+  const button = document.querySelector('#start-next-capsule-button');
+  button.disabled = true;
+  try {
+    const { error } = await supabase.rpc('start_next_capsule', {
+      p_capsule_id: capsule.id,
+    });
+    if (error) throw error;
+    await loadWorkspace();
+    showToast('La prochaine capsule est prête à accueillir vos souvenirs.');
+  } catch (error) {
+    showToast(`Impossible de relancer la capsule : ${error.message}`, 'error');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function downloadCapsule(capsuleId) {
+  try {
+    const { data: capsuleRow, error: capsuleError } = await supabase
+      .from('capsules')
+      .select('month, opened_at')
+      .eq('id', capsuleId)
+      .single();
+    if (capsuleError) throw capsuleError;
+    if (!capsuleRow.opened_at) throw new Error('Cette capsule doit être ouverte avant son téléchargement.');
+
+    const { data: memories, error: memoriesError } = await supabase
+      .from('memories')
+      .select('author_id, note, photo_path, created_at')
+      .eq('capsule_id', capsuleId)
+      .order('created_at', { ascending: true });
+    if (memoriesError) throw memoriesError;
+
+    const authorCounts = new Map(coupleMembers.map(person => [person.user_id, 0]));
+    let photoCount = 0;
+    const entries = [];
+    for (const memory of memories) {
+      authorCounts.set(memory.author_id, (authorCounts.get(memory.author_id) || 0) + 1);
+      let photo = '';
+      if (memory.photo_path) {
+        const { data: signedUrl, error: urlError } = await supabase.storage
+          .from('capsule-photos')
+          .createSignedUrl(memory.photo_path, 3600);
+        if (urlError) throw urlError;
+        const response = await fetch(signedUrl.signedUrl);
+        if (!response.ok) throw new Error(`Impossible de télécharger une photo (${response.status}).`);
+        photo = await blobToDataUrl(await response.blob());
+        photoCount += 1;
       }
+
+      const author = coupleMembers.find(person => person.user_id === memory.author_id);
+      entries.push(`<article class="memory">
+        ${photo ? `<img src="${photo}" alt="Photo déposée par ${escapeHtml(author?.display_name || 'Nous deux')}">` : ''}
+        <p class="meta">${escapeHtml(author?.display_name || 'Nous deux')} · ${escapeHtml(formatDate(memory.created_at))}</p>
+        ${memory.note ? `<p class="note">${escapeHtml(memory.note)}</p>` : ''}
+      </article>`);
     }
 
-    async function startNextCapsule() {
-      const button = document.querySelector('#start-next-capsule-button');
-      button.disabled = true;
-      try {
-        const { error } = await supabase.rpc('start_next_capsule', {
-          p_capsule_id: capsule.id,
-        });
-        if (error) throw error;
-        await loadWorkspace();
-        showToast('La prochaine capsule est prête à accueillir vos souvenirs.');
-      } catch (error) {
-        showToast(`Impossible de relancer la capsule : ${error.message}`, 'error');
-      } finally {
-        button.disabled = false;
-      }
-    }
+    const recap = [...authorCounts]
+      .map(([userId, count]) => {
+        const author = coupleMembers.find(person => person.user_id === userId);
+        return `${author?.display_name || 'Membre'} : ${count}`;
+      })
+      .join(' · ');
+    const html = `<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Amo-te — ${escapeHtml(formatMonth(capsuleRow.month))}</title>
+<style>
+body{max-width:760px;margin:40px auto;padding:0 20px;background:#fdfbf7;color:#39332e;font:16px/1.6 "Segoe UI",sans-serif}
+h1,h2{font-family:Georgia,serif;font-weight:500}h1{text-transform:capitalize}
+.recap{padding:18px;border:1px solid #e9ded1;border-radius:14px;background:#fffefa}
+.memory{margin:24px 0;padding:12px 12px 2px;border:1px solid #e9e3da;background:#fffefa}
+.memory img{width:100%;max-height:620px;object-fit:contain;background:#f2ebe2}
+.meta{color:#82776e;font-size:13px}.note{font-family:cursive;font-size:22px;white-space:pre-wrap}
+</style></head><body><h1>Notre capsule — ${escapeHtml(formatMonth(capsuleRow.month))}</h1>
+<section class="recap"><h2>Notre petit récapitulatif</h2>
+<p>${memories.length} souvenir${memories.length === 1 ? '' : 's'} · ${photoCount} photo${photoCount === 1 ? '' : 's'}</p>
+<p>${escapeHtml(recap)}</p></section>
+${entries.join('\n')}
+</body></html>`;
 
-    async function downloadCapsule(capsuleId) {
-      try {
-        const { data: capsuleRow, error: capsuleError } = await supabase
-          .from('capsules')
-          .select('month, opened_at')
-          .eq('id', capsuleId)
-          .single();
-        if (capsuleError) throw capsuleError;
-        if (!capsuleRow.opened_at) throw new Error('Cette capsule doit être ouverte avant son téléchargement.');
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `amo-te-${capsuleRow.month}.html`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Le récapitulatif de la capsule est téléchargé.');
+  } catch (error) {
+    showToast(`Impossible de télécharger la capsule : ${error.message}`, 'error');
+  }
+}
 
-        const { data: memories, error: memoriesError } = await supabase
-          .from('memories')
-          .select('author_id, note, photo_path, created_at')
-          .eq('capsule_id', capsuleId)
-          .order('created_at', { ascending: true });
-        if (memoriesError) throw memoriesError;
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(reader.result));
+    reader.addEventListener('error', () => reject(new Error('Impossible de préparer une photo pour le téléchargement.')));
+    reader.readAsDataURL(blob);
+  });
+}
 
-        const authorCounts = new Map(coupleMembers.map(person => [person.user_id, 0]));
-        let photoCount = 0;
-        const entries = [];
-        for (const memory of memories) {
-          authorCounts.set(memory.author_id, (authorCounts.get(memory.author_id) || 0) + 1);
-          let photo = '';
-          if (memory.photo_path) {
-            const { data: signedUrl, error: urlError } = await supabase.storage
-              .from('capsule-photos')
-              .createSignedUrl(memory.photo_path, 3600);
-            if (urlError) throw urlError;
-            const response = await fetch(signedUrl.signedUrl);
-            if (!response.ok) throw new Error(`Impossible de télécharger une photo (${response.status}).`);
-            photo = await blobToDataUrl(await response.blob());
-            photoCount += 1;
-          }
-
-          const author = coupleMembers.find(person => person.user_id === memory.author_id);
-          entries.push(`<article class="memory">
-            ${photo ? `<img src="${photo}" alt="Photo déposée par ${escapeHtml(author?.display_name || 'Nous deux')}">` : ''}
-            <p class="meta">${escapeHtml(author?.display_name || 'Nous deux')} · ${escapeHtml(formatDate(memory.created_at))}</p>
-            ${memory.note ? `<p class="note">${escapeHtml(memory.note)}</p>` : ''}
-          </article>`);
-        }
-
-        const recap = [...authorCounts]
-          .map(([userId, count]) => {
-            const author = coupleMembers.find(person => person.user_id === userId);
-            return `${author?.display_name || 'Membre'} : ${count}`;
-          })
-          .join(' · ');
-        const html = `<!doctype html>
-    <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-    <title>Amo-te — ${escapeHtml(formatMonth(capsuleRow.month))}</title>
-    <style>
-    body{max-width:760px;margin:40px auto;padding:0 20px;background:#fdfbf7;color:#39332e;font:16px/1.6 "Segoe UI",sans-serif}
-    h1,h2{font-family:Georgia,serif;font-weight:500}h1{text-transform:capitalize}
-    .recap{padding:18px;border:1px solid #e9ded1;border-radius:14px;background:#fffefa}
-    .memory{margin:24px 0;padding:12px 12px 2px;border:1px solid #e9e3da;background:#fffefa}
-    .memory img{width:100%;max-height:620px;object-fit:contain;background:#f2ebe2}
-    .meta{color:#82776e;font-size:13px}.note{font-family:cursive;font-size:22px;white-space:pre-wrap}
-    </style></head><body><h1>Notre capsule — ${escapeHtml(formatMonth(capsuleRow.month))}</h1>
-    <section class="recap"><h2>Notre petit récapitulatif</h2>
-    <p>${memories.length} souvenir${memories.length === 1 ? '' : 's'} · ${photoCount} photo${photoCount === 1 ? '' : 's'}</p>
-    <p>${escapeHtml(recap)}</p></section>
-    ${entries.join('\n')}
-    </body></html>`;
-
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `amo-te-${capsuleRow.month}.html`;
-        document.body.append(link);
-        link.click();
-        link.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        showToast('Le récapitulatif de la capsule est téléchargé.');
-      } catch (error) {
-        showToast(`Impossible de télécharger la capsule : ${error.message}`, 'error');
-      }
-    }
-
-    function blobToDataUrl(blob) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.addEventListener('load', () => resolve(reader.result));
-        reader.addEventListener('error', () => reject(new Error('Impossible de préparer une photo pour le téléchargement.')));
-        reader.readAsDataURL(blob);
-      });
-    }
-
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, character => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-      })[character]);
-    }
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+}
 
 async function addMemory(event) {
   event.preventDefault();
@@ -565,7 +565,7 @@ async function addMemory(event) {
 
   let photoPath = null;
   try {
-    if (capsule.opened_at || getCurrentMonthKey(couple.timezone) !== capsule.month) {
+    if (capsule.opened_at) {
       throw new Error('Cette capsule n’accepte plus de nouveaux souvenirs.');
     }
 
